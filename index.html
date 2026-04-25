@@ -1,97 +1,151 @@
 <!DOCTYPE html>
-<html>
+<html lang="ms">
 <head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MDS KEHADIRAN</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MDS Kehadiran Mesyuarat</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body{font-family:Arial;text-align:center;background:#f5f5f5;}
-.header{background:white;padding:10px;border-bottom:3px solid black;}
+
+.header{
+  background:white;
+  padding:10px;
+  border-bottom:3px solid black;
+}
+
 .logo{width:80px;}
+
 .box{display:none;padding:10px;}
 
 input,select,button{
-width:85%;padding:10px;margin:5px;border-radius:8px;
+  width:85%;
+  padding:10px;
+  margin:5px;
+  border-radius:8px;
 }
 
-button{background:#2c3e50;color:white;}
+button{background:#2c3e50;color:white;border:none;}
 
 #reader{background:white;padding:10px;border-radius:10px;}
 
 .card{
-position:fixed;top:50%;left:50%;
-transform:translate(-50%,-50%) scale(0.5);
-background:white;padding:20px;border-radius:12px;
-opacity:0;transition:0.3s;
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0.5);
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  opacity:0;
+  transition:0.3s;
 }
 
-.card.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+.card.show{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
 
-/* SIGN */
+/* SIGN MODAL */
 #signBox{
-display:none;
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:rgba(0,0,0,0.6);
+  display:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  z-index:9999;
 }
 
 .sign{
-background:white;
-width:90%;max-width:350px;
-margin:80px auto;
-padding:10px;
-border-radius:10px;
+  background:white;
+  width:90%;
+  max-width:350px;
+  margin:80px auto;
+  padding:10px;
+  border-radius:10px;
 }
 
-canvas{border:1px solid #ccc;width:100%;height:180px;}
+canvas{
+  border:1px solid #ccc;
+  width:100%;
+  height:180px;
+  background:white;
+  touch-action:none;
+}
+
+/* LOADING */
+.loading{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  flex-direction:column;
+}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-<img class="logo" src="mds.png">
-<h3>MDS KEHADIRAN MESYUARAT</h3>
+<!-- LOADING -->
+<div id="loading" class="loading">
+<p>Loading...</p>
 </div>
 
-<div id="login">
-<input id="user" placeholder="User">
-<input id="pass" type="password" placeholder="Pass">
+<!-- HEADER -->
+<div class="header">
+<img src="mds.png" class="logo">
+<h3>MAJLIS DAERAH SIMUNJAN</h3>
+<h4>KEHADIRAN MESYUARAT</h4>
+</div>
+
+<!-- LOGIN -->
+<div id="loginBox" class="box" style="display:block;">
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
 <button onclick="login()">Login</button>
 </div>
 
+<!-- DASHBOARD -->
 <div id="dash" class="box">
 
-<select id="mes">
-<option value="">Pilih Mesyuarat</option>
+<select id="mesyuarat">
+<option value="">-- Pilih Mesyuarat --</option>
 <option>Perlesenan</option>
 <option>Pengurusan</option>
 <option>Komuniti</option>
 </select>
 
+<h3>📷 Scan QR</h3>
 <div id="reader"></div>
 
-<button onclick="pdf()">Print PDF</button>
+<button onclick="printPDF()">Print PDF</button>
 
 </div>
 
+<!-- CARD -->
 <div id="card" class="card">
 <h3 id="nama"></h3>
-<p id="jaw"></p>
+<p id="jawatan"></p>
 </div>
 
-<!-- SIGN -->
+<!-- SIGNATURE -->
 <div id="signBox">
 <div class="sign">
-<h3>Tandatangan</h3>
+<h3>Tandatangan Kehadiran</h3>
+
 <canvas id="pad"></canvas>
+
 <br>
+
 <button onclick="clearSig()">Clear</button>
-<button onclick="saveSig()">Save</button>
+<button onclick="saveSig()">Simpan</button>
+
 </div>
 </div>
 
@@ -99,9 +153,11 @@ canvas{border:1px solid #ccc;width:100%;height:180px;}
 
 const API="https://script.google.com/macros/s/AKfycbyis-UjGf89bGST8zOaGXAE0_BuF90AXfGf7EFxLiyX8-YeEs8txOFG48c8SW8_uVXaiA/exec";
 
+let scanner;
 let scanLock=false;
-let current;
+let currentUser;
 
+/* LOGIN FIX */
 function login(){
 
 fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`)
@@ -110,7 +166,7 @@ fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`)
 
 if(r.success){
 
-document.getElementById("login").style.display="none";
+document.getElementById("loginBox").style.display="none";
 document.getElementById("dash").style.display="block";
 
 startQR();
@@ -122,62 +178,123 @@ alert("Login gagal");
 });
 
 }
-function startQR(){
-const qr=new Html5Qrcode("reader");
 
-qr.start({facingMode:"environment"},{fps:10,qrbox:200},
+/* QR */
+function startQR(){
+
+scanner=new Html5Qrcode("reader");
+
+scanner.start(
+{facingMode:"environment"},
+{fps:10,qrbox:200},
+
 text=>{
 
 if(scanLock)return;
 scanLock=true;
 
-fetch(`${API}?action=scan&id=${text}&mesyuarat=${mes.value}`)
+fetch(`${API}?action=scan&id=${text}&mesyuarat=${mesyuarat.value}`)
 .then(r=>r.json())
 .then(r=>{
 
 if(r.error){
 alert(r.error);
-}else{
+scanLock=false;
+return;
+}
+
 nama.innerText=r.nama;
-jaw.innerText=r.jawatan;
+jawatan.innerText=r.jawatan;
+
 card.classList.add("show");
 
-current=r;
+currentUser=r;
 
-/* SIGN */
+/* WAJIB SIGN */
 signBox.style.display="block";
-}
 
 setTimeout(()=>scanLock=false,1500);
 
 });
 
 });
+
 }
 
-/* SIGN FIX */
+/* SIGN FIXED CANVAS */
 let canvas=document.getElementById("pad");
 let ctx=canvas.getContext("2d");
-let d=false;
+let drawing=false;
 
-canvas.width=300;
-canvas.height=180;
+/* FIX RESOLUTION */
+function fixCanvas(){
 
-canvas.onmousedown=e=>{d=true;ctx.beginPath();ctx.moveTo(e.offsetX,e.offsetY);}
-canvas.onmouseup=()=>d=false;
-canvas.onmousemove=e=>{if(d){ctx.lineTo(e.offsetX,e.offsetY);ctx.stroke();}}
+let ratio=window.devicePixelRatio||1;
 
-function clearSig(){ctx.clearRect(0,0,300,180);}
+canvas.width=canvas.offsetWidth*ratio;
+canvas.height=canvas.offsetHeight*ratio;
 
+ctx.scale(ratio,ratio);
+
+ctx.strokeStyle="#000";
+ctx.lineWidth=2;
+ctx.lineCap="round";
+
+}
+
+fixCanvas();
+
+/* DRAW */
+canvas.addEventListener("mousedown",e=>{
+drawing=true;
+ctx.beginPath();
+ctx.moveTo(e.offsetX,e.offsetY);
+});
+
+canvas.addEventListener("mouseup",()=>drawing=false);
+
+canvas.addEventListener("mousemove",e=>{
+if(!drawing)return;
+ctx.lineTo(e.offsetX,e.offsetY);
+ctx.stroke();
+});
+
+/* TOUCH */
+canvas.addEventListener("touchstart",e=>{
+drawing=true;
+let t=e.touches[0];
+ctx.beginPath();
+ctx.moveTo(t.clientX-canvas.getBoundingClientRect().left,
+t.clientY-canvas.getBoundingClientRect().top);
+});
+
+canvas.addEventListener("touchend",()=>drawing=false);
+
+canvas.addEventListener("touchmove",e=>{
+if(!drawing)return;
+let t=e.touches[0];
+ctx.lineTo(
+t.clientX-canvas.getBoundingClientRect().left,
+t.clientY-canvas.getBoundingClientRect().top
+);
+ctx.stroke();
+});
+
+/* CLEAR */
+function clearSig(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+/* SAVE SIGN */
 function saveSig(){
 
-const sign=canvas.toDataURL();
+let sign=canvas.toDataURL("image/png");
 
 fetch(API,{
 method:"POST",
 body:JSON.stringify({
 action:"sign",
-id:current.id,
+id:currentUser.id,
 sign:sign
 })
 }).then(()=>{
@@ -185,13 +302,20 @@ sign:sign
 signBox.style.display="none";
 clearSig();
 
+alert("✔ Disimpan");
+
 });
+
 }
 
 /* PDF */
-function pdf(){
-const t=prompt("Tarikh YYYY-MM-DD");
-window.open(`${API}?action=pdf&mesyuarat=${mes.value}&tarikh=${t}`);
+function printPDF(){
+
+let tarikh=prompt("Tarikh YYYY-MM-DD");
+if(!tarikh)return;
+
+window.open(`${API}?action=pdf&mesyuarat=${mesyuarat.value}&tarikh=${tarikh}`);
+
 }
 
 </script>
