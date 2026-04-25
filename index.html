@@ -2,145 +2,108 @@
 <html lang="ms">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sistem Kehadiran Staf MDS</title>
+<title>Kehadiran Staf MDS</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-  font-family: Arial;
-  text-align: center;
-  background: #f5f5f5;
+body{
+  font-family:Arial;
+  text-align:center;
+  background:#f5f5f5;
 }
 
-/* HEADER */
-.logo {
-  width: 90px;
-  margin: 10px auto;
-  display: block;
-}
+.logo{width:90px;margin:10px auto;}
 
-.school-name {
-  font-size: 18px;
-  font-weight: bold;
-}
+.box{display:none;}
 
-.school-sub {
-  font-size: 12px;
-  color: #555;
-}
-
-/* UI */
-.box { display:none; padding:10px; }
-
-input, select, button {
+input,select,button{
+  width:90%;
   padding:12px;
-  width:85%;
-  margin:6px;
+  margin:6px 0;
   border-radius:8px;
   border:1px solid #ccc;
+  box-sizing:border-box;
 }
 
-button {
+button{
   background:#3498db;
   color:white;
   border:none;
+  cursor:pointer;
 }
 
-/* QR */
-#reader {
-  width:300px;
-  margin:auto;
+button:hover{
+  background:#2980b9;
 }
 
-/* RESULT */
-#result {
-  font-size:18px;
-  font-weight:bold;
-  margin-top:10px;
-}
+#reader{width:300px;margin:auto;}
 
-.success { color:green; }
-.error { color:red; }
+#result{font-weight:bold;}
+
+.success{color:green;}
+.error{color:red;}
 
 /* CARD */
-.card {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.5);
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  width: 280px;
-  opacity: 0;
-  transition: 0.3s;
-  z-index: 9999;
+.card{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0.5);
+  background:white;
+  padding:20px;
+  border-radius:15px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.3);
+  opacity:0;
+  transition:0.3s;
 }
 
-.card.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.badge {
-  display:inline-block;
-  margin-top:10px;
-  padding:5px 10px;
-  background:#2ecc71;
-  color:white;
-  border-radius:20px;
+.card.show{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
 }
 
 /* LOADING */
-.overlay {
+#loading{
   position:fixed;
   top:0;left:0;
-  width:100%;
-  height:100%;
+  width:100%;height:100%;
   background:rgba(0,0,0,0.6);
   display:none;
+  color:white;
   align-items:center;
   justify-content:center;
-  flex-direction:column;
-  color:white;
-  z-index:9999;
 }
 
-.spinner {
-  width:50px;height:50px;
-  border:5px solid #ccc;
-  border-top:5px solid #3498db;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
+/* CONTROL PANEL */
+.panel{
+  background:white;
+  padding:15px;
+  border-radius:10px;
+  margin:10px;
+  text-align:left;
 }
 
-@keyframes spin {
-  100%{transform:rotate(360deg);}
+.panel h3{
+  text-align:center;
+}
+
+label{
+  display:block;
+  font-weight:bold;
+  margin-top:10px;
+  text-align:left;
 }
 </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
 <img class="logo" src="mds.png">
-<div class="school-name">MAJLIS DAERAH SIMUNJAN</div>
-<div class="school-sub">Sistem Kehadiran Staf Rasmi</div>
+<h2>🏢 Sistem Kehadiran Staf MDS</h2>
 
-<h2>🏢 Kehadiran Staf MDS</h2>
-
-<!-- DROPDOWN MESYUARAT -->
-<h3>📅 Pilih Mesyuarat</h3>
-<select id="mesyuarat">
-  <option value="Perlesenan">Jawatankuasa Perlesenan</option>
-  <option value="Pengurusan">Jawatankuasa Pengurusan</option>
-</select>
-
-<!-- LOGIN (optional simple) -->
-<div id="loginBox" class="box" style="display:block;">
+<!-- LOGIN -->
+<div id="loginBox">
   <input id="user" placeholder="Username">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
@@ -148,6 +111,36 @@ button {
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="box">
+
+  <!-- CONTROL PANEL -->
+  <div id="controlPanel" class="panel" style="display:none;">
+
+    <h3>⚙️ Kawalan Mesyuarat</h3>
+
+    <label>Jenis Mesyuarat</label>
+    <select id="mesyuarat">
+      <option value="Perlesenan">Jawatankuasa Perlesenan</option>
+      <option value="Pengurusan">Jawatankuasa Pengurusan</option>
+    </select>
+
+    <label>Tarikh Mesyuarat</label>
+    <input type="date" id="tarikh">
+
+    <label>Masa Mesyuarat</label>
+    <select id="masa">
+      <option value="9.00am - 12.00pm">9.00am - 12.00pm</option>
+      <option value="2.30pm - 5.00pm">2.30pm - 5.00pm</option>
+    </select>
+
+    <label>Tempat Mesyuarat</label>
+    <select id="tempat">
+      <option value="Bilik Mesyuarat Utama, MDS">Bilik Mesyuarat Utama, MDS</option>
+      <option value="Bilik Jawatankuasa MDS">Bilik Jawatankuasa MDS</option>
+    </select>
+
+    <button onclick="printPDF()">🖨️ Print PDF Kehadiran</button>
+
+  </div>
 
   <h3>📷 Scan QR Staf</h3>
   <div id="reader"></div>
@@ -160,65 +153,62 @@ button {
 <div id="card" class="card">
   <h2 id="nama"></h2>
   <p id="jawatan"></p>
-  <div class="badge">✔ HADIR</div>
+  <p>✔ HADIR</p>
 </div>
 
 <!-- LOADING -->
-<div id="loading" class="overlay">
-  <div class="spinner"></div>
-  <p>Loading...</p>
-</div>
+<div id="loading">Loading...</div>
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbxQZGfqo9_DmjhxCN6AN3LrYZKJFplHrrRRNp3u4AjdoNf7z7OTdnRcwKtTOBbs7YDoKQ/exec";
+const API="https://script.google.com/macros/s/AKfycbyKVq2NrDh1TGOWVykNAB35FqeFweqk0OiKrKj2JWFn2qknS8dV33O1KIVwiPSuaglPkA/exec";
 
-let scanner;
-let lock=false;
+let scanner, lock=false;
 
-/* LOGIN SIMPLE */
+/* LOGIN */
 function login(){
   document.getElementById("loginBox").style.display="none";
   document.getElementById("dashboard").style.display="block";
+  document.getElementById("controlPanel").style.display="block";
   startQR();
 }
 
-/* START QR */
+/* QR */
 function startQR(){
-  scanner = new Html5Qrcode("reader");
+  scanner=new Html5Qrcode("reader");
 
   scanner.start(
     {facingMode:"environment"},
-    {fps:10, qrbox:250},
-    text => {
+    {fps:10,qrbox:250},
+    text=>{
 
       if(lock) return;
-      lock = true;
-
-      let mesyuarat = document.getElementById("mesyuarat").value;
+      lock=true;
 
       fetch(API,{
         method:"POST",
         body:JSON.stringify({
           id:text,
-          mesyuarat:mesyuarat
+          mesyuarat:mesyuaratValue(),
+          tempat:tempatValue(),
+          masa:masaValue()
         })
       })
       .then(r=>r.json())
       .then(res=>{
 
         if(res.status==="duplicate"){
-          showResult("❌ Sudah scan hari ini","error");
+          showResult("❌ Sudah scan","error");
           reset();
           return;
         }
 
-        showResult("✅ "+res.nama+" ("+res.jawatan+")","success");
-
-        showCard(res.nama, res.jawatan);
+        showResult("✅ "+res.nama,"success");
+        showCard(res.nama,res.jawatan);
 
         new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
-        if(navigator.vibrate) navigator.vibrate([200,100,200]);
+
+        if(navigator.vibrate) navigator.vibrate(200);
 
         reset();
       });
@@ -227,17 +217,22 @@ function startQR(){
   );
 }
 
+/* VALUES */
+function mesyuaratValue(){return document.getElementById("mesyuarat").value;}
+function tempatValue(){return document.getElementById("tempat").value;}
+function masaValue(){return document.getElementById("masa").value;}
+
 /* RESULT */
-function showResult(msg,type){
+function showResult(m,t){
   let r=document.getElementById("result");
-  r.innerText=msg;
-  r.className=type;
+  r.innerText=m;
+  r.className=t;
 }
 
 /* CARD */
-function showCard(nama,jawatan){
-  document.getElementById("nama").innerText=nama;
-  document.getElementById("jawatan").innerText="Jawatan: "+jawatan;
+function showCard(n,j){
+  document.getElementById("nama").innerText=n;
+  document.getElementById("jawatan").innerText=j;
 
   let c=document.getElementById("card");
   c.classList.add("show");
@@ -247,7 +242,36 @@ function showCard(nama,jawatan){
 
 /* RESET */
 function reset(){
-  setTimeout(()=>lock=false,1200);
+  setTimeout(()=>lock=false,1000);
+}
+
+/* PRINT PDF */
+function printPDF(){
+
+  let tarikh=document.getElementById("tarikh").value;
+
+  if(!tarikh){
+    alert("Pilih tarikh");
+    return;
+  }
+
+  document.getElementById("loading").style.display="flex";
+
+  fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"pdf",
+      tarikh:tarikh,
+      mesyuarat:mesyuaratValue(),
+      tempat:tempatValue(),
+      masa:masaValue()
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    document.getElementById("loading").style.display="none";
+    window.open(res.url,"_blank");
+  });
 }
 
 </script>
