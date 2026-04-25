@@ -11,10 +11,36 @@
 body{font-family:Arial;text-align:center;background:#f5f5f5;}
 .header{background:white;padding:10px;border-bottom:3px solid black;}
 .logo{width:80px;}
+
 .box{display:none;padding:10px;}
 input,button,select{padding:10px;width:85%;margin:5px;border-radius:8px;}
 button{background:#2c3e50;color:white;border:none;}
 
+.label{font-weight:bold;margin:10px;display:block;}
+
+.scan-box{
+  background:white;
+  padding:10px;
+  border-radius:12px;
+}
+
+/* LOADING */
+.loading{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.6);
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;color:white;z-index:9999;
+}
+.spinner{
+  width:50px;height:50px;
+  border:5px solid #ccc;
+  border-top:5px solid #fff;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{100%{transform:rotate(360deg);}}
+
+/* CARD */
 .card{
  position:fixed;top:50%;left:50%;
  transform:translate(-50%,-50%) scale(0.5);
@@ -22,12 +48,39 @@ button{background:#2c3e50;color:white;border:none;}
  opacity:0;transition:0.3s;
 }
 .card.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
-.badge{background:green;color:white;padding:5px 10px;border-radius:20px;}
+
+/* SIGN */
+#signModal{
+display:none;
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.6);
+z-index:9999;
+align-items:center;
+justify-content:center;
+}
+
+.sign-box{
+background:white;
+padding:15px;
+border-radius:10px;
+width:90%;
+max-width:350px;
+}
+
 </style>
 </head>
 
 <body>
 
+<!-- LOADING -->
+<div id="loading" class="loading">
+<div class="spinner"></div>
+<p id="loadingText">Loading...</p>
+</div>
+
+<!-- HEADER -->
 <div class="header">
 <img src="mds.png" class="logo">
 <h2>MAJLIS DAERAH SIMUNJAN</h2>
@@ -44,18 +97,21 @@ button{background:#2c3e50;color:white;border:none;}
 <!-- DASHBOARD -->
 <div id="dashboard" class="box">
 
+<label class="label">📌 Pilih Mesyuarat</label>
 <select id="mesyuarat">
-<option value="">-- Pilih Mesyuarat --</option>
+<option value="">-- Pilih --</option>
 <option value="Perlesenan">Perlesenan</option>
 <option value="Pengurusan">Pengurusan</option>
 <option value="Komuniti">Komuniti</option>
 </select>
 
+<div class="scan-box">
+<h3>📷 Scanning Area</h3>
 <div id="reader"></div>
-
 <p id="result"></p>
 
-<div id="pdfBox"></div>
+<button onclick="printPDF()">📄 Print PDF</button>
+</div>
 
 <canvas id="chart"></canvas>
 
@@ -66,121 +122,203 @@ button{background:#2c3e50;color:white;border:none;}
 <img src="mds.png" style="width:60px;">
 <h2 id="cName"></h2>
 <p id="cClass"></p>
-<div class="badge">✔ HADIR</div>
+</div>
+
+<!-- SIGNATURE -->
+<div id="signModal">
+<div class="sign-box">
+
+<h3>✍ Tandatangan Kehadiran</h3>
+<canvas id="pad" style="border:1px solid #ccc;width:100%;height:200px;"></canvas>
+
+<br>
+<button onclick="clearSign()">Clear</button>
+<button onclick="saveSign()">Simpan</button>
+
+</div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbwNHkF_ZR2ntc7EzlcbpRdIXkr4utsyCXlOKSIQ1-0rRKFHfJ0k-y01YYO4SGRk6mF8Tg/exec";
 
-let scanner, scanLock=false, role, chartObj;
+const API="https://script.google.com/macros/s/AKfycbzvPP0sf88kQDyvME5zVIIDb_ISuEeDfm1euGT_mZtXEyq6M7q071t-U9-oaZbcQCLm0A/exec";
 
-const beep=new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+let scanner, scanLock=false, role, chartObj, currentScan;
+
+/* LOADING */
+function showLoading(t){
+loading.style.display="flex";
+loadingText.innerText=t;
+}
+function hideLoading(){
+loading.style.display="none";
+}
 
 /* LOGIN */
 function login(){
-  fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`)
-  .then(r=>r.json())
-  .then(res=>{
-    if(!res.success){
-      alert("Login gagal");
-      return;
-    }
 
-    role = res.role;
+showLoading("Login...");
 
-    loginBox.style.display="none";
-    dashboard.style.display="block";
+fetch(`${API}?action=login&user=${encodeURIComponent(user.value)}&pass=${encodeURIComponent(pass.value)}`)
+.then(r=>r.json())
+.then(res=>{
 
-    if(role==="admin"){
-      pdfBox.innerHTML=`<button onclick="generatePDF()">Jana PDF</button>`;
-      startLive();
-    }
-  });
+hideLoading();
+
+if(!res.success){
+alert(res.error || "Login gagal");
+return;
 }
 
-/* START QR */
-mesyuarat.onchange = startQR;
+loginBox.style.display="none";
+dashboard.style.display="block";
+
+role = res.role;
+
+if(role==="admin"){
+startLive();
+}
+
+});
+}
+
+/* QR */
+mesyuarat.onchange=startQR;
 
 function startQR(){
 
-  if(!mesyuarat.value) return;
+if(!mesyuarat.value) return;
 
-  if(scanner) scanner.stop();
+scanner=new Html5Qrcode("reader");
 
-  scanner = new Html5Qrcode("reader");
+scanner.start({facingMode:"environment"},{fps:10,qrbox:250},
 
-  scanner.start(
-    {facingMode:"environment"},
-    {fps:10, qrbox:250},
-    text => {
+text=>{
 
-      if(scanLock) return;
-      scanLock = true;
+if(scanLock) return;
+scanLock=true;
 
-      fetch(`${API}?action=scan&id=${text}&mesyuarat=${mesyuarat.value}`)
-      .then(r=>r.json())
-      .then(res=>{
+showLoading("Scanning...");
 
-        if(res.error){
-          result.innerText = "❌ " + res.error;
-        }else{
-          result.innerText = "✅ " + res.nama;
-          showCard(res.nama, res.jawatan);
-          beep.play();
-          navigator.vibrate?.(200);
-        }
+fetch(`${API}?action=scan&id=${encodeURIComponent(text)}&mesyuarat=${encodeURIComponent(mesyuarat.value)}`)
+.then(r=>r.json())
+.then(res=>{
 
-        setTimeout(()=> scanLock=false, 1500);
-      });
+hideLoading();
 
-    }
-  );
+if(res.error){
+result.innerText=res.error;
+}else{
+
+result.innerText=res.nama;
+showCard(res.nama,res.jawatan);
+
+currentScan=res;
+
+// WAJIB SIGN
+document.getElementById("signModal").style.display="flex";
+}
+
+})
+.finally(()=>setTimeout(()=>scanLock=false,1500));
+
+});
+
 }
 
 /* CARD */
 function showCard(n,j){
-  cName.innerText=n;
-  cClass.innerText=j;
-  studentCard.classList.add("show");
-  setTimeout(()=>studentCard.classList.remove("show"),2000);
+cName.innerText=n;
+cClass.innerText=j;
+studentCard.classList.add("show");
+setTimeout(()=>studentCard.classList.remove("show"),2000);
+}
+
+/* SIGNATURE */
+let canvas=document.getElementById("pad");
+let ctx=canvas.getContext("2d");
+let draw=false;
+
+canvas.onmousedown=e=>draw=true;
+canvas.onmouseup=e=>{draw=false;ctx.beginPath();};
+canvas.onmousemove=e=>drawSig(e);
+
+function drawSig(e){
+if(!draw) return;
+ctx.lineWidth=2;
+ctx.lineCap="round";
+ctx.lineTo(e.offsetX,e.offsetY);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(e.offsetX,e.offsetY);
+}
+
+function clearSign(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+function saveSign(){
+
+let sign=canvas.toDataURL("image/png");
+
+fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"saveSign",
+id:currentScan.id,
+mesyuarat:mesyuarat.value,
+signature:sign
+})
+})
+.then(r=>r.json())
+.then(()=>{
+
+document.getElementById("signModal").style.display="none";
+clearSign();
+
+alert("✔ Kehadiran disimpan");
+
+});
+
 }
 
 /* PDF */
-function generatePDF(){
-  const tarikh = prompt("Masukkan tarikh (YYYY-MM-DD)");
-  if(!tarikh) return;
+function printPDF(){
 
-  window.open(`${API}?action=pdf&mesyuarat=${mesyuarat.value}&tarikh=${tarikh}`);
+const tarikh=prompt("Tarikh (YYYY-MM-DD)");
+if(!tarikh) return;
+
+window.open(`${API}?action=pdf&mesyuarat=${mesyuarat.value}&tarikh=${tarikh}`);
+
 }
 
-/* LIVE DASHBOARD */
+/* LIVE */
 function startLive(){
-  loadAnalytics();
-  setInterval(loadAnalytics, 5000);
+loadAnalytics();
+setInterval(loadAnalytics,5000);
 }
 
 function loadAnalytics(){
-  fetch(`${API}?action=analytics`)
-  .then(r=>r.json())
-  .then(res=>{
+fetch(`${API}?action=analytics`)
+.then(r=>r.json())
+.then(res=>{
 
-    if(chartObj){
-      chartObj.data.datasets[0].data=[res.totalHadir,res.totalTidak];
-      chartObj.update();
-    }else{
-      chartObj=new Chart(chart,{
-        type:"bar",
-        data:{
-          labels:["Hadir","Tidak"],
-          datasets:[{
-            data:[res.totalHadir,res.totalTidak]
-          }]
-        }
-      });
-    }
-
-  });
+if(chartObj){
+chartObj.data.datasets[0].data=[res.totalHadir,res.totalTidak];
+chartObj.update();
+}else{
+chartObj=new Chart(chart,{
+type:"bar",
+data:{
+labels:["Hadir","Tidak"],
+datasets:[{data:[res.totalHadir,res.totalTidak]}]
 }
+});
+}
+
+});
+
+}
+
 </script>
 
 </body>
