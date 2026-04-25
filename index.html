@@ -2,301 +2,252 @@
 <html lang="ms">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MDS Kehadiran Mesyuarat</title>
+<title>Sistem Kehadiran Staf MDS</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body{font-family:Arial;text-align:center;background:#f5f5f5;}
-
-.header{
-  background:white;
-  padding:10px;
-  border-bottom:3px solid black;
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #f5f5f5;
 }
 
-.box{padding:10px;}
+/* HEADER */
+.logo {
+  width: 90px;
+  margin: 10px auto;
+  display: block;
+}
 
-input,select,button{
+.school-name {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.school-sub {
+  font-size: 12px;
+  color: #555;
+}
+
+/* UI */
+.box { display:none; padding:10px; }
+
+input, select, button {
+  padding:12px;
   width:85%;
-  padding:10px;
-  margin:5px;
+  margin:6px;
+  border-radius:8px;
+  border:1px solid #ccc;
 }
 
-button{background:#2c3e50;color:white;}
-
-#reader{background:white;padding:10px;border-radius:10px;}
-
-.card{
-position:fixed;
-top:50%;left:50%;
-transform:translate(-50%,-50%) scale(0.5);
-background:white;
-padding:15px;
-opacity:0;
-transition:0.3s;
-border-radius:10px;
+button {
+  background:#3498db;
+  color:white;
+  border:none;
 }
 
-.card.show{
-opacity:1;
-transform:translate(-50%,-50%) scale(1);
+/* QR */
+#reader {
+  width:300px;
+  margin:auto;
 }
 
-/* SIGN MODAL */
-#signBox{
-display:none;
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:rgba(0,0,0,0.6);
+/* RESULT */
+#result {
+  font-size:18px;
+  font-weight:bold;
+  margin-top:10px;
 }
 
-.sign{
-background:white;
-width:90%;
-max-width:380px;
-margin:80px auto;
-padding:10px;
-border-radius:10px;
+.success { color:green; }
+.error { color:red; }
+
+/* CARD */
+.card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  width: 280px;
+  opacity: 0;
+  transition: 0.3s;
+  z-index: 9999;
 }
 
-#pad{
-width:100%;
-height:200px;
-border:1px solid #ccc;
-background:white;
-touch-action:none;
+.card.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.badge {
+  display:inline-block;
+  margin-top:10px;
+  padding:5px 10px;
+  background:#2ecc71;
+  color:white;
+  border-radius:20px;
+}
+
+/* LOADING */
+.overlay {
+  position:fixed;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  color:white;
+  z-index:9999;
+}
+
+.spinner {
+  width:50px;height:50px;
+  border:5px solid #ccc;
+  border-top:5px solid #3498db;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100%{transform:rotate(360deg);}
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-<h3>MAJLIS DAERAH SIMUNJAN</h3>
-<h4>KEHADIRAN MESYUARAT</h4>
-</div>
+<!-- HEADER -->
+<img class="logo" src="mds.png">
+<div class="school-name">MAJLIS DAERAH SIMUNJAN</div>
+<div class="school-sub">Sistem Kehadiran Staf Rasmi</div>
 
-<!-- LOGIN -->
-<div id="loginBox" class="box">
-<input id="user" placeholder="User">
-<input id="pass" type="password" placeholder="Pass">
-<button onclick="login()">Login</button>
+<h2>🏢 Kehadiran Staf MDS</h2>
+
+<!-- DROPDOWN MESYUARAT -->
+<h3>📅 Pilih Mesyuarat</h3>
+<select id="mesyuarat">
+  <option value="Perlesenan">Jawatankuasa Perlesenan</option>
+  <option value="Pengurusan">Jawatankuasa Pengurusan</option>
+</select>
+
+<!-- LOGIN (optional simple) -->
+<div id="loginBox" class="box" style="display:block;">
+  <input id="user" placeholder="Username">
+  <input id="pass" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
 </div>
 
 <!-- DASHBOARD -->
-<div id="dash" class="box" style="display:none;">
+<div id="dashboard" class="box">
 
-<select id="mesyuarat">
-<option>Perlesenan</option>
-<option>Pengurusan</option>
-<option>Komuniti</option>
-</select>
+  <h3>📷 Scan QR Staf</h3>
+  <div id="reader"></div>
 
-<div id="reader"></div>
-
-<button onclick="printPDF()">Print PDF</button>
+  <p id="result"></p>
 
 </div>
 
 <!-- CARD -->
 <div id="card" class="card">
-<h3 id="nama"></h3>
-<p id="jawatan"></p>
+  <h2 id="nama"></h2>
+  <p id="jawatan"></p>
+  <div class="badge">✔ HADIR</div>
 </div>
 
-<!-- SIGN -->
-<div id="signBox">
-<div class="sign">
-<h3>Tandatangan</h3>
-
-<canvas id="pad"></canvas>
-
-<button onclick="clearSig()">Clear</button>
-<button onclick="saveSig()">Save</button>
-
-</div>
+<!-- LOADING -->
+<div id="loading" class="overlay">
+  <div class="spinner"></div>
+  <p>Loading...</p>
 </div>
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbzskbrHjdYGF_h3qnI79_GGH5_PRHMdSyAtlP0PgP3pVk3CfnNoueEu2nsIDrOzlDbfhQ/exec";
+const API = "https://script.google.com/macros/s/AKfycbxQZGfqo9_DmjhxCN6AN3LrYZKJFplHrrRRNp3u4AjdoNf7z7OTdnRcwKtTOBbs7YDoKQ/exec";
 
 let scanner;
-let current;
-let scanLock = false;
+let lock=false;
 
-/* ================= LOGIN (FIX DOM ERROR) ================= */
+/* LOGIN SIMPLE */
 function login(){
-
-fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`)
-.then(r=>r.json())
-.then(r=>{
-
-if(r.success){
-
-document.getElementById("loginBox").style.display="none";
-document.getElementById("dash").style.display="block";
-
-startQR();
-
-}else{
-alert("Login gagal");
+  document.getElementById("loginBox").style.display="none";
+  document.getElementById("dashboard").style.display="block";
+  startQR();
 }
 
-});
-
-}
-
-/* ================= QR SCANNER ================= */
+/* START QR */
 function startQR(){
+  scanner = new Html5Qrcode("reader");
 
-scanner = new Html5Qrcode("reader");
+  scanner.start(
+    {facingMode:"environment"},
+    {fps:10, qrbox:250},
+    text => {
 
-scanner.start(
-{facingMode:"environment"},
-{fps:10,qrbox:200},
+      if(lock) return;
+      lock = true;
 
-text=>{
+      let mesyuarat = document.getElementById("mesyuarat").value;
 
-if(scanLock) return;
-scanLock = true;
+      fetch(API,{
+        method:"POST",
+        body:JSON.stringify({
+          id:text,
+          mesyuarat:mesyuarat
+        })
+      })
+      .then(r=>r.json())
+      .then(res=>{
 
-fetch(`${API}?action=scan&id=${text}&mesyuarat=${mesyuarat.value}`)
-.then(r=>r.json())
-.then(r=>{
+        if(res.status==="duplicate"){
+          showResult("❌ Sudah scan hari ini","error");
+          reset();
+          return;
+        }
 
-if(r.error){
-alert(r.error);
-scanLock=false;
-return;
+        showResult("✅ "+res.nama+" ("+res.jawatan+")","success");
+
+        showCard(res.nama, res.jawatan);
+
+        new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+        if(navigator.vibrate) navigator.vibrate([200,100,200]);
+
+        reset();
+      });
+
+    }
+  );
 }
 
-nama.innerText = r.nama;
-jawatan.innerText = r.jawatan;
-
-card.classList.add("show");
-
-current = r;
-
-/* WAJIB SIGN */
-signBox.style.display="block";
-
-setTimeout(()=>scanLock=false,1500);
-
-});
-
-});
-
+/* RESULT */
+function showResult(msg,type){
+  let r=document.getElementById("result");
+  r.innerText=msg;
+  r.className=type;
 }
 
-/* ================= SIGNATURE FIX (MAIN FIX HERE) ================= */
-const canvas = document.getElementById("pad");
-const ctx = canvas.getContext("2d");
+/* CARD */
+function showCard(nama,jawatan){
+  document.getElementById("nama").innerText=nama;
+  document.getElementById("jawatan").innerText="Jawatan: "+jawatan;
 
-let drawing = false;
+  let c=document.getElementById("card");
+  c.classList.add("show");
 
-/* FIX CANVAS SCALE */
-function resizeCanvas(){
-
-const rect = canvas.getBoundingClientRect();
-const ratio = window.devicePixelRatio || 1;
-
-canvas.width = rect.width * ratio;
-canvas.height = rect.height * ratio;
-
-ctx.setTransform(ratio,0,0,ratio,0,0);
-
-ctx.strokeStyle = "#000";
-ctx.lineWidth = 2;
-ctx.lineCap = "round";
+  setTimeout(()=>c.classList.remove("show"),2500);
 }
 
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
-
-/* GET POSITION FIX */
-function pos(e){
-
-const r = canvas.getBoundingClientRect();
-
-return {
-x:(e.clientX||e.touches[0].clientX)-r.left,
-y:(e.clientY||e.touches[0].clientY)-r.top
-};
-
-}
-
-/* DRAW START */
-canvas.addEventListener("mousedown",e=>{
-drawing=true;
-let p=pos(e);
-ctx.beginPath();
-ctx.moveTo(p.x,p.y);
-});
-
-canvas.addEventListener("mousemove",e=>{
-if(!drawing)return;
-let p=pos(e);
-ctx.lineTo(p.x,p.y);
-ctx.stroke();
-});
-
-canvas.addEventListener("mouseup",()=>drawing=false);
-
-/* TOUCH */
-canvas.addEventListener("touchstart",e=>{
-drawing=true;
-let p=pos(e);
-ctx.beginPath();
-ctx.moveTo(p.x,p.y);
-});
-
-canvas.addEventListener("touchmove",e=>{
-if(!drawing)return;
-let p=pos(e);
-ctx.lineTo(p.x,p.y);
-ctx.stroke();
-});
-
-canvas.addEventListener("touchend",()=>drawing=false);
-
-/* CLEAR */
-function clearSig(){
-ctx.clearRect(0,0,canvas.width,canvas.height);
-}
-
-/* SAVE SIGN */
-function saveSig(){
-
-const sign = canvas.toDataURL("image/png");
-
-fetch(API,{
-method:"POST",
-body:JSON.stringify({
-action:"sign",
-id:current.id,
-sign:sign
-})
-}).then(()=>{
-
-signBox.style.display="none";
-clearSig();
-
-alert("Signature disimpan");
-
-});
-
-}
-
-/* ================= PDF ================= */
-function printPDF(){
-
-let t = prompt("Tarikh YYYY-MM-DD");
-
-window.open(`${API}?action=pdf&mesyuarat=${mesyuarat.value}&tarikh=${t}`);
-
+/* RESET */
+function reset(){
+  setTimeout(()=>lock=false,1200);
 }
 
 </script>
