@@ -8,30 +8,12 @@
 
 <style>
 body{font-family:Arial;text-align:center;background:#f5f5f5;}
-
-.header{background:white;padding:10px;border-bottom:3px solid black;}
-
-.box{display:none;padding:10px;}
-
+.box{padding:10px;}
 input,select,button{width:85%;padding:10px;margin:5px;}
-
 button{background:#2c3e50;color:white;}
 
 #reader{background:white;padding:10px;border-radius:10px;}
 
-.card{
-position:fixed;top:50%;left:50%;
-transform:translate(-50%,-50%) scale(0.5);
-background:white;padding:15px;
-opacity:0;transition:0.3s;
-}
-
-.card.show{
-opacity:1;
-transform:translate(-50%,-50%) scale(1);
-}
-
-/* SIGN */
 #signBox{
 display:none;
 position:fixed;
@@ -60,20 +42,19 @@ touch-action:none;
 
 <body>
 
-<div class="header">
-<h3>MDS KEHADIRAN MESYUARAT</h3>
-</div>
+<h3>MDS KEHADIRAN</h3>
 
-<div id="login" class="box" style="display:block;">
+<!-- LOGIN -->
+<div id="login" class="box">
 <input id="user" placeholder="User">
 <input id="pass" type="password" placeholder="Pass">
 <button onclick="login()">Login</button>
 </div>
 
-<div id="dash" class="box">
+<!-- DASH -->
+<div id="dash" class="box" style="display:none;">
 
 <select id="mesyuarat">
-<option value="">Pilih Mesyuarat</option>
 <option>Perlesenan</option>
 <option>Pengurusan</option>
 <option>Komuniti</option>
@@ -83,11 +64,6 @@ touch-action:none;
 
 <button onclick="pdf()">PDF</button>
 
-</div>
-
-<div id="card" class="card">
-<h3 id="nama"></h3>
-<p id="jawatan"></p>
 </div>
 
 <!-- SIGN -->
@@ -105,23 +81,31 @@ touch-action:none;
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbz1yv8nYbWaQCqPXjYZVxy3Cc411Sp4akQVDFxYQqjEGL4hKvHCLGDMJ_NhrWcFwW3dbQ/exec";
+const API = "https://script.google.com/macros/s/AKfycbzskbrHjdYGF_h3qnI79_GGH5_PRHMdSyAtlP0PgP3pVk3CfnNoueEu2nsIDrOzlDbfhQ/exec";
 
-let scanner,current;
-let scanLock=false;
+let scanner;
+let current;
+let draw = false;
 
-/* LOGIN FIX */
+/* LOGIN */
 function login(){
 
 fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`)
 .then(r=>r.json())
-.then(r=>{
+.then(res=>{
 
-if(r.success){
-document.getElementById("login").style.display="none";
-document.getElementById("dash").style.display="block";
+if(res.success){
+
+document.getElementById("login").style.display = "none";
+document.getElementById("dash").style.display = "block";
+
 startQR();
-}else alert("Login gagal");
+
+}else{
+
+alert("Login gagal");
+
+}
 
 });
 
@@ -130,7 +114,7 @@ startQR();
 /* QR */
 function startQR(){
 
-scanner=new Html5Qrcode("reader");
+scanner = new Html5Qrcode("reader");
 
 scanner.start(
 {facingMode:"environment"},
@@ -138,30 +122,19 @@ scanner.start(
 
 text=>{
 
-if(scanLock)return;
-scanLock=true;
-
 fetch(`${API}?action=scan&id=${text}&mesyuarat=${mesyuarat.value}`)
 .then(r=>r.json())
 .then(r=>{
 
 if(r.error){
 alert(r.error);
-scanLock=false;
 return;
 }
 
-nama.innerText=r.nama;
-jawatan.innerText=r.jawatan;
+current = r;
 
-card.classList.add("show");
-
-current=r;
-
-/* SIGN */
+/* SHOW SIGN */
 signBox.style.display="block";
-
-setTimeout(()=>scanLock=false,1500);
 
 });
 
@@ -170,9 +143,16 @@ setTimeout(()=>scanLock=false,1500);
 }
 
 /* SIGN FIX */
-let canvas=document.getElementById("pad");
-let ctx=canvas.getContext("2d");
-let draw=false;
+const canvas = document.getElementById("pad");
+const ctx = canvas.getContext("2d");
+
+function fix(){
+canvas.width = canvas.offsetWidth;
+canvas.height = 180;
+ctx.strokeStyle="#000";
+ctx.lineWidth=2;
+}
+fix();
 
 canvas.onmousedown=e=>{
 draw=true;
@@ -196,14 +176,12 @@ ctx.clearRect(0,0,canvas.width,canvas.height);
 /* SAVE */
 function saveSig(){
 
-let sign=canvas.toDataURL();
-
 fetch(API,{
 method:"POST",
 body:JSON.stringify({
 action:"sign",
 id:current.id,
-sign:sign
+sign:canvas.toDataURL()
 })
 }).then(()=>{
 
@@ -216,7 +194,7 @@ clearSig();
 
 /* PDF */
 function pdf(){
-let t=prompt("Tarikh YYYY-MM-DD");
+let t = prompt("YYYY-MM-DD");
 window.open(`${API}?action=pdf&mesyuarat=${mesyuarat.value}&tarikh=${t}`);
 }
 
