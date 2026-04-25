@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login Ahli Mesyuarat</title>
+<title>Carian Ahli Mesyuarat MDS</title>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
@@ -17,10 +17,10 @@ body{
 .card{
   background:white;
   width:320px;
-  margin:30px auto;
+  margin:20px auto;
   padding:20px;
   border-radius:15px;
-  box-shadow:0 10px 20px rgba(0,0,0,0.2);
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
 }
 
 input,button{
@@ -38,71 +38,100 @@ button{
   cursor:pointer;
 }
 
+button:hover{
+  background:#2980b9;
+}
+
+label{
+  display:block;
+  text-align:left;
+  font-weight:bold;
+  margin-top:10px;
+}
+
 #profile{
   display:none;
+}
+
+#qrcode{
+  margin-top:15px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>🏛️ Login Ahli Mesyuarat MDS</h2>
+<h2>🏛️ Carian Ahli Mesyuarat MDS</h2>
 
-<!-- LOGIN -->
-<div class="card" id="loginBox">
-  <input id="user" placeholder="Username">
-  <input id="pass" type="password" placeholder="Password">
-  <button onclick="loginAhli()">Login</button>
+<!-- SEARCH -->
+<div class="card">
+  <input id="searchId" placeholder="Masukkan ID Ahli (contoh: MDSS001)">
+  <button onclick="search()">Cari</button>
 </div>
 
 <!-- PROFILE -->
 <div class="card" id="profile">
 
-  <h3>👤 Profil Ahli</h3>
+  <h3>👤 Maklumat Ahli</h3>
 
-  <p id="msg"></p>
+  <label>Nama</label>
+  <p id="nama">-</p>
 
-  <h4>📷 QR Code Ahli</h4>
+  <label>Jawatan</label>
+  <p id="jawatan">-</p>
+
+  <label>Bahagian</label>
+  <p id="bahagian">-</p>
+
+  <h4>📷 QR Code Kehadiran</h4>
   <div id="qrcode"></div>
 
 </div>
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbwxxxx/exec";
+const API = "https://script.google.com/macros/s/AKfycbz5qjcFfZGoggDneb4Yp05XBgctUumR0qZT_OttSUHQDqjO_PUInodVcTu7Nr2T61_Ftg/exec";
 
-/* LOGIN AHLI */
-function loginAhli(){
+/* SEARCH AHLI */
+function search(){
 
-  fetch(API,{
-    method:"POST",
-    body: JSON.stringify({
-      action:"loginAhli",
-      user: document.getElementById("user").value,
-      pass: document.getElementById("pass").value
-    })
-  })
-  .then(r => r.json())
-  .then(res => {
+  const input = document.getElementById("searchId");
+  const keyword = input.value.trim().toLowerCase();
+
+  if(!keyword){
+    alert("Sila masukkan nama");
+    return;
+  }
+
+  fetch(API + "?action=searchNama&nama=" + encodeURIComponent(keyword))
+  .then(r=>r.json())
+  .then(res=>{
 
     if(!res.success){
-      alert(res.message);
+      alert("Nama tidak dijumpai");
+      document.getElementById("profile").style.display = "none";
       return;
     }
 
-    document.getElementById("loginBox").style.display = "none";
     document.getElementById("profile").style.display = "block";
 
-    document.getElementById("msg").innerText =
-      "Selamat datang " + res.username;
+    document.getElementById("nama").innerText = res.nama;
+    document.getElementById("jawatan").innerText = res.jawatan;
+    document.getElementById("bahagian").innerText = res.bahagian;
 
-    // QR generate (guna username)
+    // reset QR
+    document.getElementById("qrcode").innerHTML = "";
+
     new QRCode(document.getElementById("qrcode"), {
-      text: res.username,
+      text: res.id,
       width: 180,
       height: 180
     });
 
+  })
+  .catch(err=>{
+    console.error(err);
+    alert("Ralat sambungan");
   });
 
 }
