@@ -9,15 +9,22 @@
 
 <style>
 body{font-family:Arial;text-align:center;background:#f5f5f5;}
+
 .header{background:white;padding:10px;border-bottom:3px solid black;}
 .logo{width:80px;}
 
 .box{display:none;padding:10px;}
-input,button,select{padding:10px;width:85%;margin:5px;border-radius:8px;}
+
+input,button,select{
+  padding:10px;width:85%;
+  margin:5px;border-radius:8px;
+}
+
 button{background:#2c3e50;color:white;border:none;}
 
-.label{font-weight:bold;margin:10px;display:block;}
+.label{font-weight:bold;display:block;margin:10px;}
 
+/* SCAN AREA */
 .scan-box{
   background:white;
   padding:10px;
@@ -26,10 +33,15 @@ button{background:#2c3e50;color:white;border:none;}
 
 /* LOADING */
 .loading{
-  position:fixed;top:0;left:0;width:100%;height:100%;
+  position:fixed;top:0;left:0;
+  width:100%;height:100%;
   background:rgba(0,0,0,0.6);
-  display:none;align-items:center;justify-content:center;
-  flex-direction:column;color:white;z-index:9999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  color:white;
+  z-index:9999;
 }
 .spinner{
   width:50px;height:50px;
@@ -44,12 +56,18 @@ button{background:#2c3e50;color:white;border:none;}
 .card{
  position:fixed;top:50%;left:50%;
  transform:translate(-50%,-50%) scale(0.5);
- background:white;padding:20px;border-radius:16px;
- opacity:0;transition:0.3s;
+ background:white;
+ padding:20px;
+ border-radius:16px;
+ opacity:0;
+ transition:0.3s;
 }
-.card.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+.card.show{
+ opacity:1;
+ transform:translate(-50%,-50%) scale(1);
+}
 
-/* SIGN */
+/* SIGN MODAL */
 #signModal{
 display:none;
 position:fixed;
@@ -67,8 +85,17 @@ padding:15px;
 border-radius:10px;
 width:90%;
 max-width:350px;
+text-align:center;
 }
 
+canvas{
+border:1px solid #ccc;
+width:100%;
+height:200px;
+touch-action:none;
+background:white;
+border-radius:8px;
+}
 </style>
 </head>
 
@@ -129,9 +156,11 @@ max-width:350px;
 <div class="sign-box">
 
 <h3>✍ Tandatangan Kehadiran</h3>
-<canvas id="pad" style="border:1px solid #ccc;width:100%;height:200px;"></canvas>
+
+<canvas id="pad"></canvas>
 
 <br>
+
 <button onclick="clearSign()">Clear</button>
 <button onclick="saveSign()">Simpan</button>
 
@@ -140,7 +169,7 @@ max-width:350px;
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbzvPP0sf88kQDyvME5zVIIDb_ISuEeDfm1euGT_mZtXEyq6M7q071t-U9-oaZbcQCLm0A/exec";
+const API="https://script.google.com/macros/s/AKfycbxmXfrrM3xSYxgb5vnYZAVHUxCj4q1HteqcKu7DARr6b8WQnYyyr3Ougl7bOcVP9r35ww/exec";
 
 let scanner, scanLock=false, role, chartObj, currentScan;
 
@@ -158,27 +187,28 @@ function login(){
 
 showLoading("Login...");
 
-fetch(`${API}?action=login&user=${encodeURIComponent(user.value)}&pass=${encodeURIComponent(pass.value)}`)
+fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`)
 .then(r=>r.json())
 .then(res=>{
 
 hideLoading();
 
 if(!res.success){
-alert(res.error || "Login gagal");
+alert("Login gagal");
 return;
 }
 
+role=res.role;
+
 loginBox.style.display="none";
 dashboard.style.display="block";
-
-role = res.role;
 
 if(role==="admin"){
 startLive();
 }
 
 });
+
 }
 
 /* QR */
@@ -190,7 +220,9 @@ if(!mesyuarat.value) return;
 
 scanner=new Html5Qrcode("reader");
 
-scanner.start({facingMode:"environment"},{fps:10,qrbox:250},
+scanner.start(
+{facingMode:"environment"},
+{fps:10,qrbox:250},
 
 text=>{
 
@@ -199,7 +231,7 @@ scanLock=true;
 
 showLoading("Scanning...");
 
-fetch(`${API}?action=scan&id=${encodeURIComponent(text)}&mesyuarat=${encodeURIComponent(mesyuarat.value)}`)
+fetch(`${API}?action=scan&id=${text}&mesyuarat=${mesyuarat.value}`)
 .then(r=>r.json())
 .then(res=>{
 
@@ -214,7 +246,7 @@ showCard(res.nama,res.jawatan);
 
 currentScan=res;
 
-// WAJIB SIGN
+/* WAJIB SIGN */
 document.getElementById("signModal").style.display="flex";
 }
 
@@ -233,29 +265,67 @@ studentCard.classList.add("show");
 setTimeout(()=>studentCard.classList.remove("show"),2000);
 }
 
-/* SIGNATURE */
+/* ===== SIGNATURE FIXED ===== */
 let canvas=document.getElementById("pad");
 let ctx=canvas.getContext("2d");
-let draw=false;
+let drawing=false;
 
-canvas.onmousedown=e=>draw=true;
-canvas.onmouseup=e=>{draw=false;ctx.beginPath();};
-canvas.onmousemove=e=>drawSig(e);
+/* FIX RESOLUTION */
+function fixCanvas(){
+let ratio=window.devicePixelRatio||1;
 
-function drawSig(e){
-if(!draw) return;
+canvas.width=canvas.offsetWidth*ratio;
+canvas.height=canvas.offsetHeight*ratio;
+
+ctx.scale(ratio,ratio);
+
 ctx.lineWidth=2;
 ctx.lineCap="round";
-ctx.lineTo(e.offsetX,e.offsetY);
-ctx.stroke();
-ctx.beginPath();
-ctx.moveTo(e.offsetX,e.offsetY);
 }
 
+fixCanvas();
+
+/* DRAW */
+function startDraw(e){
+drawing=true;
+ctx.beginPath();
+ctx.moveTo(getX(e),getY(e));
+}
+
+function endDraw(){
+drawing=false;
+}
+
+function draw(e){
+if(!drawing) return;
+
+ctx.lineTo(getX(e),getY(e));
+ctx.stroke();
+}
+
+/* EVENTS */
+canvas.addEventListener("mousedown",startDraw);
+canvas.addEventListener("mouseup",endDraw);
+canvas.addEventListener("mousemove",draw);
+
+canvas.addEventListener("touchstart",e=>startDraw(e.touches[0]));
+canvas.addEventListener("touchend",endDraw);
+canvas.addEventListener("touchmove",e=>draw(e.touches[0]));
+
+/* POSITION */
+function getX(e){
+return e.clientX-canvas.getBoundingClientRect().left;
+}
+function getY(e){
+return e.clientY-canvas.getBoundingClientRect().top;
+}
+
+/* CLEAR */
 function clearSign(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 }
 
+/* SAVE */
 function saveSign(){
 
 let sign=canvas.toDataURL("image/png");
@@ -275,7 +345,7 @@ signature:sign
 document.getElementById("signModal").style.display="none";
 clearSign();
 
-alert("✔ Kehadiran disimpan");
+alert("✔ Disimpan");
 
 });
 
@@ -284,10 +354,21 @@ alert("✔ Kehadiran disimpan");
 /* PDF */
 function printPDF(){
 
-const tarikh=prompt("Tarikh (YYYY-MM-DD)");
+const tarikh = prompt("Tarikh (YYYY-MM-DD)");
 if(!tarikh) return;
 
-window.open(`${API}?action=pdf&mesyuarat=${mesyuarat.value}&tarikh=${tarikh}`);
+showLoading("Generate PDF...");
+
+fetch(`${API}?action=pdf&mesyuarat=${mesyuarat.value}&tarikh=${tarikh}`)
+.then(r=>r.json())
+.then(res=>{
+
+hideLoading();
+
+/* AUTO OPEN TANPA CLICK MANUAL */
+window.open(res.url, "_blank");
+
+});
 
 }
 
