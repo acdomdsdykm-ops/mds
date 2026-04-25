@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistem Kehadiran MDS</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{font-family:Arial;text-align:center;background:#f5f5f5;}
+.header{background:white;padding:10px;border-bottom:3px solid black;}
+.logo{width:80px;}
+.box{display:none;padding:10px;}
+input,button,select{padding:10px;width:85%;margin:5px;border-radius:8px;}
+button{background:#2c3e50;color:white;border:none;}
+
+.card{
+ position:fixed;top:50%;left:50%;
+ transform:translate(-50%,-50%) scale(0.5);
+ background:white;padding:20px;border-radius:16px;
+ opacity:0;transition:0.3s;
+}
+.card.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+.badge{background:green;color:white;padding:5px 10px;border-radius:20px;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<img src="mds.png" class="logo">
+<h2>MAJLIS DAERAH SIMUNJAN</h2>
+<h3>KEHADIRAN MESYUARAT</h3>
+</div>
+
+<!-- LOGIN -->
+<div id="loginBox" class="box" style="display:block;">
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="box">
+
+<select id="mesyuarat">
+<option value="">-- Pilih Mesyuarat --</option>
+<option value="Perlesenan">Perlesenan</option>
+<option value="Pengurusan">Pengurusan</option>
+<option value="Komuniti">Komuniti</option>
+</select>
+
+<div id="reader"></div>
+
+<p id="result"></p>
+
+<div id="pdfBox"></div>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<!-- CARD -->
+<div id="studentCard" class="card">
+<img src="mds.png" style="width:60px;">
+<h2 id="cName"></h2>
+<p id="cClass"></p>
+<div class="badge">✔ HADIR</div>
+</div>
+
+<script>
+const API="https://script.google.com/macros/s/AKfycbwNHkF_ZR2ntc7EzlcbpRdIXkr4utsyCXlOKSIQ1-0rRKFHfJ0k-y01YYO4SGRk6mF8Tg/exec";
+
+let scanner, scanLock=false, role, chartObj;
+
+const beep=new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+
+/* LOGIN */
+function login(){
+  fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`)
+  .then(r=>r.json())
+  .then(res=>{
+    if(!res.success){
+      alert("Login gagal");
+      return;
+    }
+
+    role = res.role;
+
+    loginBox.style.display="none";
+    dashboard.style.display="block";
+
+    if(role==="admin"){
+      pdfBox.innerHTML=`<button onclick="generatePDF()">Jana PDF</button>`;
+      startLive();
+    }
+  });
+}
+
+/* START QR */
+mesyuarat.onchange = startQR;
+
+function startQR(){
+
+  if(!mesyuarat.value) return;
+
+  if(scanner) scanner.stop();
+
+  scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    {facingMode:"environment"},
+    {fps:10, qrbox:250},
+    text => {
+
+      if(scanLock) return;
+      scanLock = true;
+
+      fetch(`${API}?action=scan&id=${text}&mesyuarat=${mesyuarat.value}`)
+      .then(r=>r.json())
+      .then(res=>{
+
+        if(res.error){
+          result.innerText = "❌ " + res.error;
+        }else{
+          result.innerText = "✅ " + res.nama;
+          showCard(res.nama, res.jawatan);
+          beep.play();
+          navigator.vibrate?.(200);
+        }
+
+        setTimeout(()=> scanLock=false, 1500);
+      });
+
+    }
+  );
+}
+
+/* CARD */
+function showCard(n,j){
+  cName.innerText=n;
+  cClass.innerText=j;
+  studentCard.classList.add("show");
+  setTimeout(()=>studentCard.classList.remove("show"),2000);
+}
+
+/* PDF */
+function generatePDF(){
+  const tarikh = prompt("Masukkan tarikh (YYYY-MM-DD)");
+  if(!tarikh) return;
+
+  window.open(`${API}?action=pdf&mesyuarat=${mesyuarat.value}&tarikh=${tarikh}`);
+}
+
+/* LIVE DASHBOARD */
+function startLive(){
+  loadAnalytics();
+  setInterval(loadAnalytics, 5000);
+}
+
+function loadAnalytics(){
+  fetch(`${API}?action=analytics`)
+  .then(r=>r.json())
+  .then(res=>{
+
+    if(chartObj){
+      chartObj.data.datasets[0].data=[res.totalHadir,res.totalTidak];
+      chartObj.update();
+    }else{
+      chartObj=new Chart(chart,{
+        type:"bar",
+        data:{
+          labels:["Hadir","Tidak"],
+          datasets:[{
+            data:[res.totalHadir,res.totalTidak]
+          }]
+        }
+      });
+    }
+
+  });
+}
+</script>
+
+</body>
+</html>
