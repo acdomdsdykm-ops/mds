@@ -115,6 +115,16 @@ label{
   font-weight:bold;
 }
 
+/* REFRESH BUTTON */
+.refresh-btn{
+  background:#2ecc71;
+  margin-top:10px;
+}
+
+.refresh-btn:hover{
+  background:#27ae60;
+}
+
 </style>
 </head>
 
@@ -147,6 +157,9 @@ label{
 
   <button onclick="searchNama()">Cari Ahli</button>
 
+  <!-- 🔵 NEW REFRESH BUTTON -->
+  <button class="refresh-btn" onclick="resetPage()">🔄 Refresh</button>
+
   <p id="error"></p>
 
 </div>
@@ -168,11 +181,14 @@ label{
   <h4>📷 QR Code Ahli</h4>
   <div id="qrcode"></div>
 
+  <!-- 🔵 NEW REFRESH BUTTON (PROFILE VIEW) -->
+  <button class="refresh-btn" onclick="resetPage()">🔄 Cari Semula</button>
+
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbz5qjcFfZGoggDneb4Yp05XBgctUumR0qZT_OttSUHQDqjO_PUInodVcTu7Nr2T61_Ftg/exec";
+const API="https://script.google.com/macros/s/AKfycbzW489UfeB9qVs3sOIV2JMqfDkAhOlfWXOC4IlIxjoOt2YQ8RqSBUVk2MFohJqJCzVYUw/exec";
 
 /* ================= LOADING ================= */
 function showLoading(text){
@@ -184,7 +200,18 @@ function hideLoading(){
   document.getElementById("loading").style.display="none";
 }
 
-/* ================= SEARCH BY NAME ================= */
+/* ================= RESET PAGE (NEW) ================= */
+function resetPage(){
+  document.getElementById("namaInput").value = "";
+  document.getElementById("error").innerText = "";
+
+  document.getElementById("searchBox").style.display = "block";
+  document.getElementById("profile").style.display = "none";
+
+  document.getElementById("qrcode").innerHTML = "";
+}
+
+/* ================= SEARCH ================= */
 function searchNama(){
 
   let nama = document.getElementById("namaInput").value.trim().toLowerCase();
@@ -196,7 +223,7 @@ function searchNama(){
 
   document.getElementById("error").innerText = "";
 
-  showLoading("Mencari ahli...");
+  showLoading("Dalam semakan, sila tunggu sebentar...");
 
   fetch(API + "?action=searchNama&nama=" + encodeURIComponent(nama))
   .then(r=>r.json())
@@ -223,7 +250,7 @@ function searchNama(){
     });
 
   })
-  .catch(err=>{
+  .catch(()=>{
     hideLoading();
     document.getElementById("error").innerText = "Ralat sistem";
   });
