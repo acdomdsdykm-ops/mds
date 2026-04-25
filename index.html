@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kehadiran Staf MDS</title>
+<title>Sistem Kehadiran MDS</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -12,16 +12,17 @@ body{
   font-family:Arial;
   text-align:center;
   background:#f5f5f5;
+  margin:0;
 }
 
-/* LETTERHEAD */
+/* ===== LETTERHEAD ===== */
 .letterhead{
   text-align:center;
-  margin:10px 0;
+  padding:10px 0;
 }
 
 .logo{
-  width:90px;
+  width:85px;
   display:block;
   margin:auto;
 }
@@ -29,46 +30,72 @@ body{
 .org-name{
   font-weight:bold;
   font-size:16px;
+  margin-top:5px;
 }
 
 .org-address{
   font-size:12px;
-  color:#333;
+  color:#444;
 }
 
-/* FORM */
-input,select,button{
+/* ===== PANEL ===== */
+.panel{
+  background:white;
+  margin:12px;
+  padding:18px;
+  border-radius:12px;
+  text-align:left;
+  box-shadow:0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* SECTION TITLE */
+.section-title{
+  font-size:14px;
+  font-weight:bold;
+  margin-bottom:10px;
+  color:#2c3e50;
+}
+
+/* LABEL */
+label{
+  display:block;
+  font-weight:600;
+  font-size:13px;
+  margin:12px 0 6px;
+  color:#2c3e50;
+}
+
+/* INPUT / SELECT */
+input,select{
+  width:100%;
+  padding:11px;
+  border-radius:10px;
+  border:1px solid #dcdcdc;
+  font-size:14px;
+  box-sizing:border-box;
+}
+
+input:focus,select:focus{
+  outline:none;
+  border-color:#2ecc71;
+  box-shadow:0 0 0 3px rgba(46,204,113,0.15);
+}
+
+/* BUTTON */
+button{
   width:90%;
   padding:12px;
-  margin:6px 0;
-  border-radius:8px;
-  border:1px solid #ccc;
-}
-
-button{
+  margin:8px 0;
+  border-radius:10px;
+  border:none;
   background:#3498db;
   color:white;
-  border:none;
+  font-size:14px;
   cursor:pointer;
 }
 
 button:hover{
   background:#2980b9;
-}
-
-/* PANEL */
-.panel{
-  background:white;
-  margin:10px;
-  padding:15px;
-  border-radius:10px;
-  text-align:left;
-}
-
-label{
-  font-weight:bold;
-  display:block;
-  margin-top:10px;
 }
 
 /* QR */
@@ -100,7 +127,7 @@ label{
 .success{color:green;}
 .error{color:red;}
 
-/* LOADING OVERLAY */
+/* LOADING */
 .loading{
   position:fixed;
   top:0;left:0;
@@ -116,8 +143,8 @@ label{
 }
 
 .spinner{
-  width:55px;
-  height:55px;
+  width:50px;
+  height:50px;
   border:5px solid #ccc;
   border-top:5px solid #2ecc71;
   border-radius:50%;
@@ -151,7 +178,7 @@ label{
   </div>
 </div>
 
-<h2>🏢 Sistem Kehadiran Staf MDS</h2>
+<h3>🏢 Sistem Kehadiran Staf MDS</h3>
 
 <!-- LOGIN -->
 <div id="loginBox">
@@ -160,9 +187,9 @@ label{
   <button onclick="login()">Login</button>
 </div>
 
-<!-- BUTTON AHLI -->
-<button onclick="openAhliPage()" style="background:#2ecc71;width:90%;">
-👤 Paparan QR Code Ahli Mesyuarat
+<!-- BUTTON -->
+<button onclick="openAhliPage()" style="background:#2ecc71;">
+👤 Paparan QR Ahli Mesyuarat
 </button>
 
 <!-- DASHBOARD -->
@@ -170,7 +197,7 @@ label{
 
 <div class="panel">
 
-<h3>⚙️ Kawalan Mesyuarat</h3>
+<div class="section-title">⚙️ Kawalan Mesyuarat</div>
 
 <label>Jenis Mesyuarat</label>
 <select id="mesyuarat">
@@ -178,20 +205,23 @@ label{
   <option>Pengurusan</option>
 </select>
 
-<label>Tarikh</label>
+<label>Tarikh Mesyuarat</label>
 <input type="date" id="tarikh">
 
-<label>Masa</label>
+<label>Masa Mesyuarat</label>
 <select id="masa">
   <option>9.00am - 12.00pm</option>
   <option>2.30pm - 5.00pm</option>
 </select>
 
-<label>Tempat</label>
-<select id="tempat">
-  <option>Bilik Mesyuarat Utama, MDS</option>
-  <option>Bilik Jawatankuasa MDS</option>
+<label>Tempat Mesyuarat</label>
+<select id="tempat" onchange="toggleTempat(this.value)">
+  <option value="Bilik Mesyuarat Utama, MDS">Bilik Mesyuarat Utama</option>
+  <option value="Bilik Jawatankuasa MDS">Bilik Jawatankuasa</option>
+  <option value="lain">Lain-lain</option>
 </select>
+
+<input type="text" id="tempatLain" placeholder="Isi lokasi lain jika perlu">
 
 <button onclick="printPDF()">🖨️ Print PDF Kehadiran</button>
 
@@ -199,6 +229,7 @@ label{
 
 <h3>📷 Scan QR</h3>
 <div id="reader"></div>
+
 <p id="result"></p>
 
 </div>
@@ -212,37 +243,33 @@ label{
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbz5qjcFfZGoggDneb4Yp05XBgctUumR0qZT_OttSUHQDqjO_PUInodVcTu7Nr2T61_Ftg/exec";
+const API="https://script.google.com/macros/s/AKfycbzW489UfeB9qVs3sOIV2JMqfDkAhOlfWXOC4IlIxjoOt2YQ8RqSBUVk2MFohJqJCzVYUw/exec";
 
 let scanner;
 let lock=false;
 
-/* ================= LOADING ================= */
-function showLoading(text){
-  document.getElementById("loadingText").innerText = text || "Loading...";
-  document.getElementById("loading").style.display = "flex";
+/* LOADING */
+function showLoading(t){
+  loadingText.innerText=t||"Loading...";
+  loading.style.display="flex";
 }
-
 function hideLoading(){
-  document.getElementById("loading").style.display = "none";
+  loading.style.display="none";
 }
 
-/* ================= OPEN AHLI ================= */
+/* OPEN AHLI */
 function openAhliPage(){
-
-  showLoading("Membuka paparan ahli...");
-
+  showLoading("Membuka...");
   setTimeout(()=>{
     hideLoading();
     window.open("ahli.html","_blank");
-  },800);
-
+  },700);
 }
 
-/* ================= LOGIN ================= */
+/* LOGIN */
 function login(){
 
-  showLoading("Semak login...");
+  showLoading("Login in progess..");
 
   fetch(API,{
     method:"POST",
@@ -262,8 +289,8 @@ function login(){
       return;
     }
 
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("dashboard").style.display="block";
+    loginBox.style.display="none";
+    dashboard.style.display="block";
 
     startQR();
 
@@ -271,7 +298,21 @@ function login(){
 
 }
 
-/* ================= QR ================= */
+/* TEMPAT */
+function toggleTempat(v){
+  if(v==="lain"){
+    tempatLain.style.display="block";
+  }else{
+    tempatLain.style.display="none";
+    tempatLain.value="";
+  }
+}
+
+function getTempat(){
+  return tempat.value==="lain" ? tempatLain.value : tempat.value;
+}
+
+/* QR */
 function startQR(){
 
   scanner=new Html5Qrcode("reader");
@@ -289,7 +330,7 @@ function startQR(){
         body:JSON.stringify({
           id:text,
           mesyuarat:mesyuarat.value,
-          tempat:tempat.value,
+          tempat:getTempat(),
           masa:masa.value
         })
       })
@@ -303,8 +344,6 @@ function startQR(){
 
         setTimeout(()=>card.classList.remove("show"),2500);
 
-        new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
-
         reset();
 
       });
@@ -314,12 +353,12 @@ function startQR(){
 
 }
 
-/* ================= RESET ================= */
+/* RESET */
 function reset(){
   setTimeout(()=>lock=false,1000);
 }
 
-/* ================= PDF ================= */
+/* PDF */
 function printPDF(){
 
   if(!tarikh.value){
@@ -327,7 +366,7 @@ function printPDF(){
     return;
   }
 
-  showLoading("Menjana PDF rasmi...");
+  showLoading("Laporan sedang dijana. Sila tunggu..");
 
   fetch(API,{
     method:"POST",
@@ -335,16 +374,14 @@ function printPDF(){
       action:"pdf",
       tarikh:tarikh.value,
       mesyuarat:mesyuarat.value,
-      tempat:tempat.value,
+      tempat:getTempat(),
       masa:masa.value
     })
   })
   .then(r=>r.json())
   .then(res=>{
-
     hideLoading();
     window.open(res.url,"_blank");
-
   });
 
 }
