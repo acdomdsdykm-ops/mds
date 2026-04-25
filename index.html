@@ -15,7 +15,7 @@ body{
   margin:0;
 }
 
-/* ===== LETTERHEAD ===== */
+/* HEADER */
 .letterhead{
   text-align:center;
   padding:10px 0;
@@ -30,7 +30,6 @@ body{
 .org-name{
   font-weight:bold;
   font-size:16px;
-  margin-top:5px;
 }
 
 .org-address{
@@ -38,47 +37,21 @@ body{
   color:#444;
 }
 
-/* ===== PANEL ===== */
+/* PANEL */
 .panel{
   background:white;
   margin:12px;
   padding:18px;
   border-radius:12px;
   text-align:left;
-  box-shadow:0 2px 10px rgba(0,0,0,0.05);
 }
 
-/* SECTION TITLE */
-.section-title{
-  font-size:14px;
-  font-weight:bold;
-  margin-bottom:10px;
-  color:#2c3e50;
-}
-
-/* LABEL */
-label{
-  display:block;
-  font-weight:600;
-  font-size:13px;
-  margin:12px 0 6px;
-  color:#2c3e50;
-}
-
-/* INPUT / SELECT */
+/* INPUT */
 input,select{
   width:100%;
-  padding:11px;
-  border-radius:10px;
-  border:1px solid #dcdcdc;
-  font-size:14px;
-  box-sizing:border-box;
-}
-
-input:focus,select:focus{
-  outline:none;
-  border-color:#2ecc71;
-  box-shadow:0 0 0 3px rgba(46,204,113,0.15);
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
 }
 
 /* BUTTON */
@@ -86,16 +59,11 @@ button{
   width:90%;
   padding:12px;
   margin:8px 0;
-  border-radius:10px;
   border:none;
+  border-radius:10px;
   background:#3498db;
   color:white;
-  font-size:14px;
   cursor:pointer;
-}
-
-button:hover{
-  background:#2980b9;
 }
 
 /* QR */
@@ -113,7 +81,7 @@ button:hover{
   background:white;
   padding:20px;
   border-radius:15px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.3);
+  box-shadow:0 10px 25px rgba(0,0,0,0.3);
   opacity:0;
   transition:0.3s;
 }
@@ -123,10 +91,6 @@ button:hover{
   transform:translate(-50%,-50%) scale(1);
 }
 
-/* RESULT */
-.success{color:green;}
-.error{color:red;}
-
 /* LOADING */
 .loading{
   position:fixed;
@@ -135,11 +99,11 @@ button:hover{
   height:100%;
   background:rgba(0,0,0,0.6);
   display:none;
-  align-items:center;
   justify-content:center;
+  align-items:center;
   flex-direction:column;
-  z-index:9999;
   color:white;
+  z-index:9999;
 }
 
 .spinner{
@@ -149,12 +113,42 @@ button:hover{
   border-top:5px solid #2ecc71;
   border-radius:50%;
   animation:spin 1s linear infinite;
-  margin-bottom:10px;
 }
 
 @keyframes spin{
-  0%{transform:rotate(0deg);}
+  0%{transform:rotate(0);}
   100%{transform:rotate(360deg);}
+}
+
+/* POPUP */
+.popup{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:white;
+  padding:25px;
+  border-radius:15px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.3);
+  text-align:center;
+  opacity:0;
+  visibility:hidden;
+  transition:0.3s;
+  z-index:99999;
+  width:300px;
+}
+
+.popup.show{
+  opacity:1;
+  visibility:visible;
+}
+
+.popup h3{
+  color:#2ecc71;
+}
+
+.popup button{
+  background:#2ecc71;
 }
 
 </style>
@@ -168,7 +162,7 @@ button:hover{
   <p id="loadingText">Loading...</p>
 </div>
 
-<!-- LETTERHEAD -->
+<!-- HEADER -->
 <div class="letterhead">
   <img class="logo" src="mds.png">
   <div class="org-name">MAJLIS DAERAH SIMUNJAN</div>
@@ -178,7 +172,7 @@ button:hover{
   </div>
 </div>
 
-<h3>🏢 Sistem Kehadiran Staf MDS</h3>
+<h3>🏢 Sistem Kehadiran MDS</h3>
 
 <!-- LOGIN -->
 <div id="loginBox">
@@ -187,9 +181,9 @@ button:hover{
   <button onclick="login()">Login</button>
 </div>
 
-<!-- BUTTON -->
+<!-- 👤 BUTTON BARU (QR AHLI) -->
 <button onclick="openAhliPage()" style="background:#2ecc71;">
-👤 Paparan QR Ahli Mesyuarat
+👤 Paparan QR Code Ahli Mesyuarat
 </button>
 
 <!-- DASHBOARD -->
@@ -197,40 +191,33 @@ button:hover{
 
 <div class="panel">
 
-<div class="section-title">⚙️ Kawalan Mesyuarat</div>
-
-<label>Jenis Mesyuarat</label>
+<label>Mesyuarat</label>
 <select id="mesyuarat">
   <option>Perlesenan</option>
   <option>Pengurusan</option>
 </select>
 
-<label>Tarikh Mesyuarat</label>
+<label>Tarikh</label>
 <input type="date" id="tarikh">
 
-<label>Masa Mesyuarat</label>
+<label>Masa</label>
 <select id="masa">
   <option>9.00am - 12.00pm</option>
   <option>2.30pm - 5.00pm</option>
 </select>
 
-<label>Tempat Mesyuarat</label>
-<select id="tempat" onchange="toggleTempat(this.value)">
-  <option value="Bilik Mesyuarat Utama, MDS">Bilik Mesyuarat Utama</option>
-  <option value="Bilik Jawatankuasa MDS">Bilik Jawatankuasa</option>
-  <option value="lain">Lain-lain</option>
+<label>Tempat</label>
+<select id="tempat">
+  <option>Bilik Mesyuarat Utama</option>
+  <option>Bilik Jawatankuasa</option>
 </select>
 
-<input type="text" id="tempatLain" placeholder="Isi lokasi lain jika perlu">
-
-<button onclick="printPDF()">🖨️ Print PDF Kehadiran</button>
+<button onclick="printPDF()">🖨️ Print PDF</button>
 
 </div>
 
-<h3>📷 Scan QR</h3>
+<h3>📷 QR Scan</h3>
 <div id="reader"></div>
-
-<p id="result"></p>
 
 </div>
 
@@ -241,12 +228,25 @@ button:hover{
   <p>✔ HADIR</p>
 </div>
 
+<!-- POPUP -->
+<div id="popup" class="popup">
+  <h3>✔ Berjaya Direkod</h3>
+  <p id="pNama"></p>
+  <p id="pJawatan"></p>
+  <button onclick="closePopup()">OK</button>
+</div>
+
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbzW489UfeB9qVs3sOIV2JMqfDkAhOlfWXOC4IlIxjoOt2YQ8RqSBUVk2MFohJqJCzVYUw/exec";
 
 let scanner;
 let lock=false;
+
+/* SOUND */
+function beep(){
+  new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+}
 
 /* LOADING */
 function showLoading(t){
@@ -257,9 +257,9 @@ function hideLoading(){
   loading.style.display="none";
 }
 
-/* OPEN AHLI */
+/* 👤 OPEN AHLI PAGE */
 function openAhliPage(){
-  showLoading("Membuka...");
+  showLoading("Membuka paparan ahli...");
   setTimeout(()=>{
     hideLoading();
     window.open("ahli.html","_blank");
@@ -269,7 +269,7 @@ function openAhliPage(){
 /* LOGIN */
 function login(){
 
-  showLoading("Login in progess..");
+  showLoading("Login...");
 
   fetch(API,{
     method:"POST",
@@ -298,39 +298,29 @@ function login(){
 
 }
 
-/* TEMPAT */
-function toggleTempat(v){
-  if(v==="lain"){
-    tempatLain.style.display="block";
-  }else{
-    tempatLain.style.display="none";
-    tempatLain.value="";
-  }
-}
-
-function getTempat(){
-  return tempat.value==="lain" ? tempatLain.value : tempat.value;
-}
-
 /* QR */
 function startQR(){
 
-  scanner=new Html5Qrcode("reader");
+  scanner = new Html5Qrcode("reader");
 
   scanner.start(
     {facingMode:"environment"},
-    {fps:10,qrbox:250},
+    {fps:10, qrbox:250},
     text=>{
 
       if(lock) return;
       lock=true;
+
+      scanner.stop(); // STOP AUTO
+
+      beep(); // SOUND
 
       fetch(API,{
         method:"POST",
         body:JSON.stringify({
           id:text,
           mesyuarat:mesyuarat.value,
-          tempat:getTempat(),
+          tempat:tempat.value,
           masa:masa.value
         })
       })
@@ -341,8 +331,9 @@ function startQR(){
         jawatan.innerText=res.jawatan;
 
         card.classList.add("show");
+        setTimeout(()=>card.classList.remove("show"),2000);
 
-        setTimeout(()=>card.classList.remove("show"),2500);
+        showPopup(res.nama,res.jawatan);
 
         reset();
 
@@ -353,9 +344,23 @@ function startQR(){
 
 }
 
+/* POPUP */
+function showPopup(nama,jawatan){
+  pNama.innerText="Nama: "+nama;
+  pJawatan.innerText="Jawatan: "+jawatan;
+  popup.classList.add("show");
+}
+
+function closePopup(){
+  popup.classList.remove("show");
+}
+
 /* RESET */
 function reset(){
-  setTimeout(()=>lock=false,1000);
+  setTimeout(()=>{
+    lock=false;
+    startQR();
+  },1200);
 }
 
 /* PDF */
@@ -366,7 +371,7 @@ function printPDF(){
     return;
   }
 
-  showLoading("Laporan sedang dijana. Sila tunggu..");
+  showLoading("Menjana PDF...");
 
   fetch(API,{
     method:"POST",
@@ -374,7 +379,7 @@ function printPDF(){
       action:"pdf",
       tarikh:tarikh.value,
       mesyuarat:mesyuarat.value,
-      tempat:getTempat(),
+      tempat:tempat.value,
       masa:masa.value
     })
   })
