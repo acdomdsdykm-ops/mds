@@ -26,11 +26,9 @@ body{
   background:rgba(255,255,255,0.12);
   backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,0.2);
-  color:white;
   margin:12px auto;
   padding:20px;
   border-radius:14px;
-  text-align:center;
   max-width:340px;
 }
 
@@ -52,11 +50,6 @@ button{
   background:linear-gradient(135deg,#10b981,#059669);
   color:white;
   font-weight:bold;
-  cursor:pointer;
-}
-
-button:hover{
-  transform:scale(1.02);
 }
 
 #reader{width:300px;margin:auto;}
@@ -67,12 +60,11 @@ button:hover{
   color:#a7f3d0;
 }
 
-/* POPUP */
 .popup{
   position:fixed;
   top:50%;left:50%;
   transform:translate(-50%,-50%);
-  background:rgba(255,255,255,0.95);
+  background:rgba(255,255,255,0.96);
   border-radius:18px;
   padding:25px;
   width:280px;
@@ -110,18 +102,28 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <h3>🏢 SISTEM KEHADIRAN MDS</h3>
 
+<!-- LOGIN -->
 <div id="loginBox" class="panel">
   <input id="user" placeholder="Username">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
 </div>
 
+<!-- 🔵 NEW BUTTON QR STAFF -->
+<button onclick="openQRStaf()" style="
+width:95%;
+max-width:340px;
+background:linear-gradient(135deg,#3b82f6,#2563eb);
+">
+👤 Paparan QRCode Staf
+</button>
+
 <div id="dashboard" style="display:none;">
 
 <div class="panel">
 
 <label>Jenis Mesyuarat / Program</label>
-<select id="jenisMesyuarat" onchange="toggleOptions()">
+<select id="jenisMesyuarat">
 <option value="">-- Pilih --</option>
 <option value="Jawatankuasa Kewangan">Jawatankuasa Kewangan</option>
 <option value="Jawatankuasa Perlesenan">Jawatankuasa Perlesenan</option>
@@ -159,7 +161,7 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 </div>
 
-<!-- POPUP FIXED -->
+<!-- POPUP -->
 <div id="popup" class="popup">
 
 <div style="font-size:40px;">🎉</div>
@@ -177,8 +179,6 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbw1SU1rXicE1HD917ii3pwucNxsSvute4VAj4bm1cZqXp2fWa3VOilA0AqbatWflINMHA/exec";
-
 let scanner;
 let lock=false;
 let scannedList=[];
@@ -191,24 +191,18 @@ loginBox.style.display="none";
 dashboard.style.display="block";
 }
 
-/* VALIDATE */
-function validateForm(){
-if(!jenisMesyuarat.value||!tarikh.value||!masaMula.value||!masaTamat.value||!tempat.value){
-return "Sila lengkapkan semua maklumat";
-}
-return null;
+/* OPEN QR STAFF PAGE */
+function openQRStaf(){
+
+let url = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=MDS-STAF-QR";
+
+window.open(url,"_blank");
+
 }
 
 /* START SCAN */
 function startQR(){
 
-let err=validateForm();
-if(err){
-document.getElementById("errorMsg").innerText=err;
-return;
-}
-
-document.getElementById("errorMsg").innerText="";
 document.getElementById("statusScan").innerText="📡 Scanning in progress...";
 
 scanner=new Html5Qrcode("reader");
@@ -218,7 +212,7 @@ scanner.start({facingMode:"environment"},{fps:10,qrbox:250},text=>{
 if(lock) return;
 lock=true;
 
-document.getElementById("statusScan").innerText="⚙️ Processing data...";
+document.getElementById("statusScan").innerText="⚙️ Processing...";
 
 if(scannedList.includes(text)){
 document.getElementById("statusScan").innerText="🔴 Duplicate scan detected";
@@ -230,7 +224,7 @@ scannedList.push(text);
 
 scanner.stop().catch(()=>{});
 
-fetch(API,{
+fetch("https://script.google.com/macros/s/AKfycbw1SU1rXicE1HD917ii3pwucNxsSvute4VAj4bm1cZqXp2fWa3VOilA0AqbatWflINMHA/exec",{
 method:"POST",
 headers:{"Content-Type":"text/plain"},
 body:JSON.stringify({
@@ -245,12 +239,11 @@ masa:masaMula.value+"-"+masaTamat.value
 
 beep.play();
 
-/* ✅ FIX UNDEFINED */
-let nama = res?.nama || "Tidak Dikenal Pasti";
-let jawatan = res?.jawatan || "Tidak Dikenal Pasti";
+let nama = res.nama || "Tidak Dikenal";
+let jawatan = res.jawatan || "Tidak Dikenal";
 
-document.getElementById("pNama").innerText = nama;
-document.getElementById("pJawatan").innerText = jawatan;
+document.getElementById("pNama").innerText="Nama: "+nama;
+document.getElementById("pJawatan").innerText="Jawatan: "+jawatan;
 
 document.getElementById("statusScan").innerText="🟢 Attendance recorded successfully";
 
