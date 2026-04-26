@@ -47,7 +47,6 @@ button{
   color:white;
   cursor:pointer;
 }
-
 button:hover{background:#2980b9;}
 
 #reader{width:300px;margin:auto;}
@@ -78,60 +77,35 @@ button:hover{background:#2980b9;}
   box-shadow:0 10px 30px rgba(0,0,0,0.3);
   opacity:0;
   visibility:hidden;
-  transition:0.3s;
-  z-index:99999;
 }
 .popup.show{opacity:1;visibility:visible;}
 
-.loading{
-  position:fixed;
-  top:0;left:0;
-  width:100%;height:100%;
-  background:rgba(0,0,0,0.6);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  color:white;
-}
-
-.spinner{
-  width:50px;height:50px;
-  border:5px solid #ccc;
-  border-top:5px solid #2ecc71;
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-
-@keyframes spin{100%{transform:rotate(360deg);}}
-
-#bilBox,#programBox{display:none;}
+#bilBox,#programBox,#taklimatBox,#tempatLainBox{display:none;}
 
 </style>
 </head>
 
 <body>
 
-<div id="loading" class="loading">
-  <div class="spinner"></div>
-  <p id="loadingText">Loading...</p>
-</div>
-
 <div class="letterhead">
   <img class="logo" src="mds.png">
   <div class="org-name">MAJLIS DAERAH SIMUNJAN</div>
-  <div class="org-address">Lot 805, Gunong Ngeli New Service Centre,<br>94800 Simunjan, Sarawak</div>
+  <div class="org-address">Sistem Kehadiran Digital MDS</div>
 </div>
 
 <h3>🏢 Sistem Kehadiran MDS</h3>
 
+<!-- LOGIN -->
 <div id="loginBox">
   <input id="user" placeholder="Username">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
 </div>
 
-<button onclick="openAhliPage()" style="background:#2ecc71;">👤 Paparan QR Code Ahli</button>
+<!-- QR AHLI (KEKAL) -->
+<button onclick="openAhliPage()" style="background:#2ecc71;">
+👤 Paparan QR Code Ahli Mesyuarat
+</button>
 
 <div id="dashboard" style="display:none;">
 
@@ -139,23 +113,32 @@ button:hover{background:#2980b9;}
 
 <label>Jenis Mesyuarat / Program</label>
 <select id="jenisMesyuarat" onchange="toggleOptions()">
-  <option value="">-- Pilih --</option>
 
-  <option value="Jawatankuasa Kewangan" data-bil="1">Jawatankuasa Kewangan</option>
-  <option value="Jawatankuasa Perlesenan" data-bil="1">Jawatankuasa Perlesenan</option>
-  <option value="Jawatankuasa Pengurusan" data-bil="1">Jawatankuasa Pengurusan</option>
+<option value="">-- Pilih --</option>
 
-  <option value="Perhimpunan Bulanan Staf" data-bil="0">Perhimpunan Bulanan Staf</option>
-  <option value="Taklimat Khas" data-bil="0">Taklimat Khas</option>
+<option value="Jawatankuasa Kewangan" data-bil="1">Jawatankuasa Kewangan</option>
+<option value="Jawatankuasa Perlesenan" data-bil="1">Jawatankuasa Perlesenan</option>
+<option value="Jawatankuasa Pengurusan" data-bil="1">Jawatankuasa Pengurusan</option>
 
-  <option value="Program Komuniti" data-bil="0">Program Komuniti</option>
+<option value="Perhimpunan Bulanan Staf" data-bil="0">Perhimpunan Bulanan Staf</option>
+<option value="Taklimat Khas" data-bil="0">Taklimat Khas</option>
+<option value="Program Komuniti" data-bil="0">Program Komuniti</option>
+
 </select>
 
+<!-- PROGRAM -->
 <div id="programBox">
   <label>Nama Program Komuniti</label>
-  <input id="namaProgram" placeholder="Contoh: Gotong-Royong Perdana">
+  <input id="namaProgram">
 </div>
 
+<!-- TAKLIMAT -->
+<div id="taklimatBox">
+  <label>Nama Taklimat Khas</label>
+  <input id="namaTaklimat">
+</div>
+
+<!-- BIL -->
 <div id="bilBox">
   <label>Bil Mesyuarat</label>
   <select id="bilMesyuarat">
@@ -177,12 +160,12 @@ button:hover{background:#2980b9;}
 
 <label>Tempat</label>
 <select id="tempat" onchange="toggleTempat(this.value)">
-  <option value="Bilik Mesyuarat Utama">Bilik Mesyuarat Utama</option>
-  <option value="Bilik Jawatankuasa">Bilik Jawatankuasa</option>
-  <option value="lain">Lain-lain</option>
+<option>Bilik Mesyuarat Utama</option>
+<option>Bilik Jawatankuasa</option>
+<option value="lain">Lain-lain</option>
 </select>
 
-<input type="text" id="tempatLain" placeholder="Isi lokasi lain">
+<input id="tempatLainBox" placeholder="Lokasi lain">
 
 <button onclick="printPDF()">🖨️ Print PDF</button>
 
@@ -193,12 +176,14 @@ button:hover{background:#2980b9;}
 
 </div>
 
+<!-- CARD -->
 <div id="card" class="card">
   <h2 id="nama"></h2>
   <p id="jawatan"></p>
   <p>✔ HADIR</p>
 </div>
 
+<!-- POPUP -->
 <div id="popup" class="popup">
   <h3>✔ Berjaya Direkod</h3>
   <p id="pNama"></p>
@@ -208,122 +193,155 @@ button:hover{background:#2980b9;}
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbzMH6Z82wbAu8jRPnwAM_rdEVnUpYK557HsgtPNz30nM3WTsVJ1sycMWkolv1sFhLk3/exec";
+const API="https://script.google.com/macros/s/AKfycbw2tjb-PMyznZktMQL2YMUG2-cbMXu1t0dtIzmCZ6pw9WU0kmHEAr_sojShtVlZ3vwoSw/exec";
+
 let scanner;
 let lock=false;
 
+/* FIX DOM */
+const user=document.getElementById("user");
+const pass=document.getElementById("pass");
+const loginBox=document.getElementById("loginBox");
+const dashboard=document.getElementById("dashboard");
+const nama=document.getElementById("nama");
+const jawatan=document.getElementById("jawatan");
+const popup=document.getElementById("popup");
+const card=document.getElementById("card");
+
+/* QR AHLI (KEKAL) */
+function openAhliPage(){
+  window.open("ahli.html","_blank");
+}
+
+/* TOGGLE */
 function toggleOptions(){
+
   let s = jenisMesyuarat.options[jenisMesyuarat.selectedIndex];
 
   bilBox.style.display = s.getAttribute("data-bil")==="1"?"block":"none";
   programBox.style.display = (jenisMesyuarat.value==="Program Komuniti")?"block":"none";
+  taklimatBox.style.display = (jenisMesyuarat.value==="Taklimat Khas")?"block":"none";
 }
 
+/* DATA */
 function getMesyuaratFull(){
-  let jenis = jenisMesyuarat.value;
-  if(!jenis) return null;
 
-  if(jenis==="Program Komuniti"){
-    return jenis + " - " + (namaProgram.value||"");
+  let j = jenisMesyuarat.value;
+  if(!j) return "";
+
+  if(j==="Program Komuniti"){
+    return j+" - "+(namaProgram.value||"");
+  }
+
+  if(j==="Taklimat Khas"){
+    return j+" - "+(namaTaklimat.value||"");
   }
 
   let s = jenisMesyuarat.options[jenisMesyuarat.selectedIndex];
-  if(s.getAttribute("data-bil")==="1"){
-    return jenis + " " + bilMesyuarat.value;
-  }
 
-  return jenis;
+  return s.getAttribute("data-bil")==="1"
+    ? j+" "+bilMesyuarat.value
+    : j;
 }
 
 function getMasa(){
-  return masaMula.value + " - " + masaTamat.value;
+  return masaMula.value+" - "+masaTamat.value;
 }
 
 function toggleTempat(v){
-  tempatLain.style.display = v==="lain"?"block":"none";
+  tempatLainBox.style.display = v==="lain"?"block":"none";
 }
 
 function getTempat(){
-  return tempat.value==="lain"?tempatLain.value:tempat.value;
+  return tempat.value==="lain"?tempatLainBox.value:tempat.value;
 }
 
+/* LOGIN */
 function login(){
-  fetch(API,{method:"POST",body:JSON.stringify({action:"login",user:user.value,pass:pass.value})})
-  .then(r=>r.json())
-  .then(res=>{
-    if(!res.success) return alert("Login gagal");
-    loginBox.style.display="none";
-    dashboard.style.display="block";
-    startQR();
-  });
+
+fetch(API,{
+method:"POST",
+headers:{"Content-Type":"text/plain"},
+body:JSON.stringify({action:"login",user:user.value,pass:pass.value})
+})
+.then(r=>r.json())
+.then(res=>{
+if(!res.success){
+alert("Login gagal");
+return;
+}
+loginBox.style.display="none";
+dashboard.style.display="block";
+startQR();
+});
+
 }
 
+/* QR */
 function startQR(){
-  scanner=new Html5Qrcode("reader");
-  scanner.start({facingMode:"environment"},{fps:10,qrbox:250},text=>{
 
-    if(lock) return;
-    lock=true;
-    scanner.stop();
+scanner=new Html5Qrcode("reader");
 
-    fetch(API,{method:"POST",body:JSON.stringify({
-      id:text,
-      mesyuarat:getMesyuaratFull(),
-      tempat:getTempat(),
-      masa:getMasa()
-    })})
-    .then(r=>r.json())
-    .then(res=>{
+scanner.start({facingMode:"environment"},{fps:10,qrbox:250},text=>{
 
-      nama.innerText=res.nama||"-";
-      jawatan.innerText=res.jawatan||"-";
+if(lock) return;
+lock=true;
 
-      card.classList.add("show");
-      setTimeout(()=>card.classList.remove("show"),2000);
+scanner.stop().catch(()=>{});
 
-      showPopup(res.nama,res.jawatan);
+fetch(API,{
+method:"POST",
+headers:{"Content-Type":"text/plain"},
+body:JSON.stringify({
+id:text,
+mesyuarat:getMesyuaratFull(),
+tempat:getTempat(),
+masa:getMasa()
+})
+});
 
-      setTimeout(()=>{
-        lock=false;
-        startQR();
-      },1500);
+setTimeout(()=>{
+lock=false;
+startQR();
+},1500);
 
-    });
+});
 
-  });
 }
 
+/* POPUP */
 function showPopup(n,j){
-  pNama.innerText="Nama: "+n;
-  pJawatan.innerText="Jawatan: "+j;
-  popup.classList.add("show");
+document.getElementById("pNama").innerText=n||"-";
+document.getElementById("pJawatan").innerText=j||"-";
+popup.classList.add("show");
 }
-function closePopup(){popup.classList.remove("show");}
+
+function closePopup(){
+popup.classList.remove("show");
 }
+
+/* PDF */
 function printPDF(){
 
-  fetch(API,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"pdf",
-      tarikh: tarikh.value,
-      mesyuarat: getMesyuaratFull(),
-      tempat: getTempat(),
-      masa: getMasa()
-    })
-  })
-  .then(r=>r.json())
-  .then(res=>{
-    if(res.url){
-      window.open(res.url,"_blank");
-    }else{
-      alert("PDF gagal dijana");
-    }
-  })
-  .catch(err=>{
-    console.log(err);
-    alert("Ralat PDF");
-  });
+fetch(API,{
+method:"POST",
+headers:{"Content-Type":"text/plain"},
+body:JSON.stringify({
+action:"pdf",
+tarikh:tarikh.value,
+mesyuarat:getMesyuaratFull(),
+tempat:getTempat(),
+masa:getMasa()
+})
+})
+.then(r=>r.json())
+.then(res=>{
+if(res.url){
+window.open(res.url,"_blank");
+}else{
+alert("PDF gagal");
+}
+});
 
 }
 
