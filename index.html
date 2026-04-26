@@ -299,6 +299,33 @@ function showPopup(n,j){
   popup.classList.add("show");
 }
 function closePopup(){popup.classList.remove("show");}
+}
+function printPDF(){
+
+  fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"pdf",
+      tarikh: tarikh.value,
+      mesyuarat: getMesyuaratFull(),
+      tempat: getTempat(),
+      masa: getMasa()
+    })
+  })
+  .then(r=>r.json())
+  .then(res=>{
+    if(res.url){
+      window.open(res.url,"_blank");
+    }else{
+      alert("PDF gagal dijana");
+    }
+  })
+  .catch(err=>{
+    console.log(err);
+    alert("Ralat PDF");
+  });
+
+}
 
 </script>
 
