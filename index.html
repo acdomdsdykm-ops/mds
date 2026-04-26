@@ -8,6 +8,7 @@
 
 <style>
 
+/* 🌿 BACKGROUND HIJAU TUA FULL SCREEN */
 body{
   font-family:Arial;
   text-align:center;
@@ -17,61 +18,61 @@ body{
   color:white;
 }
 
+/* LETTERHEAD */
 .letterhead{padding:12px 0;}
 .logo{width:85px;}
 .org-name{font-weight:bold;font-size:16px;}
 .org-address{font-size:12px;color:#d1d5db;}
 
+/* PANEL */
 .panel{
-  background:rgba(255,255,255,0.12);
-  backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.2);
-  margin:12px auto;
-  padding:20px;
-  border-radius:14px;
-  max-width:340px;
+  background:white;
+  color:black;
+  margin:12px;
+  padding:18px;
+  border-radius:12px;
+  text-align:left;
+  box-shadow:0 10px 25px rgba(0,0,0,0.25);
 }
 
+/* INPUT */
 input,select{
-  width:95%;
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  margin-top:8px;
+  width:98%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  margin-top:5px;
 }
 
 button{
-  width:95%;
+  width:99%;
   padding:12px;
-  margin:8px 0;
+  margin:10px 0;
   border:none;
   border-radius:10px;
-  background:linear-gradient(135deg,#10b981,#059669);
+  background:#3498db;
   color:white;
-  font-weight:bold;
   cursor:pointer;
 }
 
+button:hover{background:#2980b9;}
+
+/* QR SCANNER */
 #reader{width:300px;margin:auto;}
 
-#statusScan{
-  margin-top:10px;
-  font-weight:bold;
-  color:#a7f3d0;
-}
-
+/* POPUP */
 .popup{
   position:fixed;
   top:50%;left:50%;
   transform:translate(-50%,-50%);
-  background:rgba(255,255,255,0.96);
-  border-radius:18px;
+  background:white;
+  color:black;
   padding:25px;
-  width:280px;
-  text-align:center;
+  border-radius:15px;
   box-shadow:0 10px 30px rgba(0,0,0,0.3);
   opacity:0;
   visibility:hidden;
+  z-index:99999;
 }
 
 .popup.show{
@@ -79,19 +80,15 @@ button{
   visibility:visible;
 }
 
-#errorMsg{
-  color:#ffb4b4;
-  font-size:13px;
-  margin-top:8px;
-}
-
-.manualBox{display:none;margin-top:8px;}
+/* HIDE BOX */
+#bilBox,#programBox,#taklimatBox,#tempatLainBox{display:none;}
 
 </style>
 </head>
 
 <body>
 
+<!-- SOUND -->
 <audio id="beepSound"
 src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
@@ -101,23 +98,18 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
   <div class="org-address">Sistem Kehadiran Digital MDS</div>
 </div>
 
-<h3>🏢 SISTEM KEHADIRAN MDS</h3>
+<h3>🏢 Sistem Kehadiran MDS</h3>
 
 <!-- LOGIN -->
 <div id="loginBox" class="panel">
-
-<input id="user" placeholder="Username">
-<input id="pass" type="password" placeholder="Password">
-
-<button onclick="login()">Login</button>
-
-<div id="loginError" style="color:#ffb4b4;font-size:13px;"></div>
-
+  <input id="user" placeholder="Username">
+  <input id="pass" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
 </div>
 
-<!-- QR STAFF -->
-<button onclick="openQRStaf()" style="width:95%;max-width:340px;background:linear-gradient(135deg,#3b82f6,#2563eb);">
-👤 QRCode Staff
+<!-- QR AHLI -->
+<button onclick="openAhliPage()" style="background:#2ecc71;">
+👤 Paparan QR Code Ahli Mesyuarat
 </button>
 
 <div id="dashboard" style="display:none;">
@@ -128,30 +120,35 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 <select id="jenisMesyuarat" onchange="toggleOptions()">
 
 <option value="">-- Pilih --</option>
-<option value="Jawatankuasa Kewangan">Jawatankuasa Kewangan</option>
-<option value="Jawatankuasa Perlesenan">Jawatankuasa Perlesenan</option>
-<option value="Jawatankuasa Pengurusan">Jawatankuasa Pengurusan</option>
-<option value="Program Komuniti">Program Komuniti</option>
-<option value="Taklimat Khas">Taklimat Khas</option>
+
+<option value="Jawatankuasa Kewangan" data-bil="1">Jawatankuasa Kewangan</option>
+<option value="Jawatankuasa Perlesenan" data-bil="1">Jawatankuasa Perlesenan</option>
+<option value="Jawatankuasa Pengurusan" data-bil="1">Jawatankuasa Pengurusan</option>
+
+<option value="Perhimpunan Bulanan Staf" data-bil="0">Perhimpunan Bulanan Staf</option>
+<option value="Taklimat Khas" data-bil="0">Taklimat Khas</option>
+<option value="Program Komuniti" data-bil="0">Program Komuniti</option>
 
 </select>
 
-<!-- MANUAL -->
-<div id="programBox" class="manualBox">
-<input id="namaProgram" placeholder="Nama Program">
+<div id="programBox">
+  <label>Nama Program</label>
+  <input id="namaProgram">
 </div>
 
-<div id="taklimatBox" class="manualBox">
-<input id="namaTaklimat" placeholder="Nama Taklimat">
+<div id="taklimatBox">
+  <label>Nama Taklimat</label>
+  <input id="namaTaklimat">
 </div>
 
-<div id="layer2Box" class="manualBox">
-<select id="bilMesyuarat">
-<option>Bil.1/2026</option>
-<option>Bil.2/2026</option>
-<option>Bil.3/2026</option>
-<option>Bil.4/2026</option>
-</select>
+<div id="bilBox">
+  <label>Bil Mesyuarat</label>
+  <select id="bilMesyuarat">
+    <option>Bil.1/2026</option>
+    <option>Bil.2/2026</option>
+    <option>Bil.3/2026</option>
+    <option>Bil.4/2026</option>
+  </select>
 </div>
 
 <label>Tarikh</label>
@@ -167,92 +164,95 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 <select id="tempat">
 <option>Bilik Mesyuarat Utama</option>
 <option>Bilik Jawatankuasa</option>
+<option value="lain">Lain-lain</option>
 </select>
 
-<button onclick="startQR()">📷 START SCAN</button>
+<input id="tempatLainBox" placeholder="Lokasi lain">
 
-<div id="statusScan">🟢 Sedia untuk scan</div>
+<button onclick="printPDF()">🖨️ Print PDF</button>
 
 </div>
 
-<h3>📷 SCAN QR</h3>
+<h3>📷 Scan QR</h3>
 <div id="reader"></div>
 
 </div>
 
 <!-- POPUP -->
 <div id="popup" class="popup">
-
-<div style="font-size:40px;">🎉</div>
-
-<h3 style="color:#047857;">KEHADIRAN BERJAYA</h3>
-
-<p id="pNama" style="font-weight:bold;"></p>
-<p id="pJawatan" style="color:#555;"></p>
-
+  <h3>✔ SCAN BERJAYA</h3>
+  <p id="pNama"></p>
+  <p id="pJawatan"></p>
+  <button onclick="closePopup()">OK</button>
 </div>
 
 <script>
 
+const API="https://script.google.com/macros/s/AKfycbw1SU1rXicE1HD917ii3pwucNxsSvute4VAj4bm1cZqXp2fWa3VOilA0AqbatWflINMHA/exec";
+
 let scanner;
 let lock=false;
-let scannedList=[];
 
 const beep=document.getElementById("beepSound");
 
-/* 🔐 LOGIN FROM SHEET */
-function login(){
-
-fetch("https://script.google.com/macros/s/AKfycbw1SU1rXicE1HD917ii3pwucNxsSvute4VAj4bm1cZqXp2fWa3VOilA0AqbatWflINMHA/exec",{
-method:"POST",
-headers:{"Content-Type":"text/plain"},
-body:JSON.stringify({
-action:"login",
-user:user.value,
-pass:pass.value
-})
-})
-.then(r=>r.json())
-.then(res=>{
-
-if(res.success){
-loginBox.style.display="none";
-dashboard.style.display="block";
-}else{
-loginError.innerText="Login gagal. Sila cuba lagi.";
-}
-
-});
-
-}
-
-/* QR STAFF */
-function openQRStaf(){
-window.open("ahli.html","_blank");
+/* OPEN AHLI */
+function openAhliPage(){
+  window.open("ahli.html","_blank");
 }
 
 /* TOGGLE */
 function toggleOptions(){
 
-programBox.style.display="none";
-taklimatBox.style.display="none";
-layer2Box.style.display="none";
+  let s = jenisMesyuarat.options[jenisMesyuarat.selectedIndex];
 
-if(jenisMesyuarat.value==="Program Komuniti"){
-programBox.style.display="block";
+  bilBox.style.display = s.getAttribute("data-bil")==="1"?"block":"none";
+  programBox.style.display = (jenisMesyuarat.value==="Program Komuniti")?"block":"none";
+  taklimatBox.style.display = (jenisMesyuarat.value==="Taklimat Khas")?"block":"none";
 }
 
-if(jenisMesyuarat.value==="Taklimat Khas"){
-taklimatBox.style.display="block";
+/* MESYUARAT */
+function getMesyuaratFull(){
+
+  let j = jenisMesyuarat.value;
+  if(!j) return "";
+
+  if(j==="Program Komuniti"){
+    return j+" - "+(namaProgram.value||"");
+  }
+
+  if(j==="Taklimat Khas"){
+    return j+" - "+(namaTaklimat.value||"");
+  }
+
+  let s = jenisMesyuarat.options[jenisMesyuarat.selectedIndex];
+
+  return s.getAttribute("data-bil")==="1"
+    ? j+" "+bilMesyuarat.value
+    : j;
 }
 
-if(jenisMesyuarat.value.includes("Jawatankuasa")){
-layer2Box.style.display="block";
+/* LOGIN */
+function login(){
+
+fetch(API,{
+method:"POST",
+headers:{"Content-Type":"text/plain"},
+body:JSON.stringify({action:"login",user:user.value,pass:pass.value})
+})
+.then(r=>r.json())
+.then(res=>{
+if(!res.success){
+alert("Login gagal");
+return;
 }
+loginBox.style.display="none";
+dashboard.style.display="block";
+startQR();
+});
 
 }
 
-/* SCAN */
+/* QR SCAN */
 function startQR(){
 
 scanner=new Html5Qrcode("reader");
@@ -262,26 +262,16 @@ scanner.start({facingMode:"environment"},{fps:10,qrbox:250},text=>{
 if(lock) return;
 lock=true;
 
-if(scannedList.includes(text)){
-lock=false;
-return;
-}
-
-scannedList.push(text);
-
 scanner.stop().catch(()=>{});
 
-fetch("https://script.google.com/macros/s/AKfycbw1SU1rXicE1HD917ii3pwucNxsSvute4VAj4bm1cZqXp2fWa3VOilA0AqbatWflINMHA/exec",{
+fetch(API,{
 method:"POST",
 headers:{"Content-Type":"text/plain"},
 body:JSON.stringify({
 id:text,
-mesyuarat:jenisMesyuarat.value,
-program:namaProgram.value||"",
-taklimat:namaTaklimat.value||"",
-bil:bilMesyuarat.value||"",
+mesyuarat:getMesyuaratFull(),
 tempat:tempat.value,
-masa:masaMula.value+"-"+masaTamat.value
+masa:masaMula.value+" - "+masaTamat.value
 })
 })
 .then(r=>r.json())
@@ -289,21 +279,58 @@ masa:masaMula.value+"-"+masaTamat.value
 
 beep.play();
 
-pNama.innerText="Nama: "+(res.nama||"Tiada Data");
-pJawatan.innerText="Jawatan: "+(res.jawatan||"Tiada Data");
+if(navigator.vibrate){
+navigator.vibrate(300);
+}
 
+let speech = new SpeechSynthesisUtterance(
+"Nama " + res.nama + ". Jawatan " + res.jawatan
+);
+speech.lang="ms-MY";
+speechSynthesis.speak(speech);
+
+document.getElementById("pNama").innerText="Nama: "+res.nama;
+document.getElementById("pJawatan").innerText="Jawatan: "+res.jawatan;
 popup.classList.add("show");
 
 setTimeout(()=>{
-
 popup.classList.remove("show");
 lock=false;
 startQR();
-
 },1800);
 
 });
 
+});
+
+}
+
+/* CLOSE POPUP */
+function closePopup(){
+popup.classList.remove("show");
+}
+
+/* PRINT */
+function printPDF(){
+
+fetch(API,{
+method:"POST",
+headers:{"Content-Type":"text/plain"},
+body:JSON.stringify({
+action:"pdf",
+tarikh:tarikh.value,
+mesyuarat:getMesyuaratFull(),
+tempat:tempat.value,
+masa:masaMula.value+" - "+masaTamat.value
+})
+})
+.then(r=>r.json())
+.then(res=>{
+if(res.url){
+window.open(res.url,"_blank");
+}else{
+alert("PDF gagal dijana");
+}
 });
 
 }
