@@ -47,25 +47,10 @@ button{
   color:white;
   cursor:pointer;
 }
+
 button:hover{background:#2980b9;}
 
 #reader{width:300px;margin:auto;}
-
-.card{
-  position:fixed;
-  top:50%;left:50%;
-  transform:translate(-50%,-50%) scale(0.5);
-  background:white;
-  padding:20px;
-  border-radius:15px;
-  box-shadow:0 10px 25px rgba(0,0,0,0.3);
-  opacity:0;
-  transition:0.3s;
-}
-.card.show{
-  opacity:1;
-  transform:translate(-50%,-50%) scale(1);
-}
 
 .popup{
   position:fixed;
@@ -77,8 +62,13 @@ button:hover{background:#2980b9;}
   box-shadow:0 10px 30px rgba(0,0,0,0.3);
   opacity:0;
   visibility:hidden;
+  z-index:99999;
 }
-.popup.show{opacity:1;visibility:visible;}
+
+.popup.show{
+  opacity:1;
+  visibility:visible;
+}
 
 #bilBox,#programBox,#taklimatBox,#tempatLainBox{display:none;}
 
@@ -86,6 +76,10 @@ button:hover{background:#2980b9;}
 </head>
 
 <body>
+
+<!-- SOUND -->
+<audio id="beepSound"
+src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <div class="letterhead">
   <img class="logo" src="mds.png">
@@ -102,7 +96,7 @@ button:hover{background:#2980b9;}
   <button onclick="login()">Login</button>
 </div>
 
-<!-- QR AHLI (KEKAL) -->
+<!-- QR AHLI -->
 <button onclick="openAhliPage()" style="background:#2ecc71;">
 👤 Paparan QR Code Ahli Mesyuarat
 </button>
@@ -126,19 +120,16 @@ button:hover{background:#2980b9;}
 
 </select>
 
-<!-- PROGRAM -->
 <div id="programBox">
-  <label>Nama Program Komuniti</label>
+  <label>Nama Program</label>
   <input id="namaProgram">
 </div>
 
-<!-- TAKLIMAT -->
 <div id="taklimatBox">
-  <label>Nama Taklimat Khas</label>
+  <label>Nama Taklimat</label>
   <input id="namaTaklimat">
 </div>
 
-<!-- BIL -->
 <div id="bilBox">
   <label>Bil Mesyuarat</label>
   <select id="bilMesyuarat">
@@ -159,7 +150,7 @@ button:hover{background:#2980b9;}
 <input type="time" id="masaTamat">
 
 <label>Tempat</label>
-<select id="tempat" onchange="toggleTempat(this.value)">
+<select id="tempat">
 <option>Bilik Mesyuarat Utama</option>
 <option>Bilik Jawatankuasa</option>
 <option value="lain">Lain-lain</option>
@@ -167,6 +158,7 @@ button:hover{background:#2980b9;}
 
 <input id="tempatLainBox" placeholder="Lokasi lain">
 
+<!-- PRINT BUTTON (KEKAL + STABIL) -->
 <button onclick="printPDF()">🖨️ Print PDF</button>
 
 </div>
@@ -176,16 +168,9 @@ button:hover{background:#2980b9;}
 
 </div>
 
-<!-- CARD -->
-<div id="card" class="card">
-  <h2 id="nama"></h2>
-  <p id="jawatan"></p>
-  <p>✔ HADIR</p>
-</div>
-
 <!-- POPUP -->
 <div id="popup" class="popup">
-  <h3>✔ Berjaya Direkod</h3>
+  <h3>✔ SCAN BERJAYA</h3>
   <p id="pNama"></p>
   <p id="pJawatan"></p>
   <button onclick="closePopup()">OK</button>
@@ -198,22 +183,14 @@ const API="https://script.google.com/macros/s/AKfycbw2tjb-PMyznZktMQL2YMUG2-cbMX
 let scanner;
 let lock=false;
 
-/* FIX DOM */
-const user=document.getElementById("user");
-const pass=document.getElementById("pass");
-const loginBox=document.getElementById("loginBox");
-const dashboard=document.getElementById("dashboard");
-const nama=document.getElementById("nama");
-const jawatan=document.getElementById("jawatan");
-const popup=document.getElementById("popup");
-const card=document.getElementById("card");
+const beep=document.getElementById("beepSound");
 
-/* QR AHLI (KEKAL) */
+/* OPEN AHLI */
 function openAhliPage(){
   window.open("ahli.html","_blank");
 }
 
-/* TOGGLE */
+/* TOGGLE MENU */
 function toggleOptions(){
 
   let s = jenisMesyuarat.options[jenisMesyuarat.selectedIndex];
@@ -244,18 +221,6 @@ function getMesyuaratFull(){
     : j;
 }
 
-function getMasa(){
-  return masaMula.value+" - "+masaTamat.value;
-}
-
-function toggleTempat(v){
-  tempatLainBox.style.display = v==="lain"?"block":"none";
-}
-
-function getTempat(){
-  return tempat.value==="lain"?tempatLainBox.value:tempat.value;
-}
-
 /* LOGIN */
 function login(){
 
@@ -277,7 +242,7 @@ startQR();
 
 }
 
-/* QR */
+/* QR SCANNER */
 function startQR(){
 
 scanner=new Html5Qrcode("reader");
@@ -295,32 +260,52 @@ headers:{"Content-Type":"text/plain"},
 body:JSON.stringify({
 id:text,
 mesyuarat:getMesyuaratFull(),
-tempat:getTempat(),
-masa:getMasa()
+tempat:tempat.value,
+masa:masaMula.value+" - "+masaTamat.value
 })
-});
+})
+.then(r=>r.json())
+.then(res=>{
 
-setTimeout(()=>{
-lock=false;
-startQR();
-},1500);
+/* SOUND */
+beep.play();
 
-});
-
+/* VIBRATION */
+if(navigator.vibrate){
+navigator.vibrate(300);
 }
+
+/* VOICE */
+let speech = new SpeechSynthesisUtterance(
+"Nama " + res.nama + ". Jawatan " + res.jawatan
+);
+speech.lang="ms-MY";
+speechSynthesis.speak(speech);
 
 /* POPUP */
-function showPopup(n,j){
-document.getElementById("pNama").innerText=n||"-";
-document.getElementById("pJawatan").innerText=j||"-";
+document.getElementById("pNama").innerText="Nama: "+res.nama;
+document.getElementById("pJawatan").innerText="Jawatan: "+res.jawatan;
 popup.classList.add("show");
+
+/* RESET */
+setTimeout(()=>{
+popup.classList.remove("show");
+lock=false;
+startQR();
+},1800);
+
+});
+
+});
+
 }
 
+/* CLOSE POPUP */
 function closePopup(){
 popup.classList.remove("show");
 }
 
-/* PDF */
+/* 🖨️ PRINT PDF FUNCTION (FIXED & STABLE) */
 function printPDF(){
 
 fetch(API,{
@@ -330,8 +315,8 @@ body:JSON.stringify({
 action:"pdf",
 tarikh:tarikh.value,
 mesyuarat:getMesyuaratFull(),
-tempat:getTempat(),
-masa:getMasa()
+tempat:tempat.value,
+masa:masaMula.value+" - "+masaTamat.value
 })
 })
 .then(r=>r.json())
@@ -339,8 +324,12 @@ masa:getMasa()
 if(res.url){
 window.open(res.url,"_blank");
 }else{
-alert("PDF gagal");
+alert("PDF gagal dijana");
 }
+})
+.catch(err=>{
+console.log(err);
+alert("Ralat print PDF");
 });
 
 }
