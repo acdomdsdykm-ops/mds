@@ -38,7 +38,6 @@ input,select{
   border-radius:10px;
   border:none;
   margin-top:8px;
-  outline:none;
 }
 
 button{
@@ -50,6 +49,7 @@ button{
   background:linear-gradient(135deg,#10b981,#059669);
   color:white;
   font-weight:bold;
+  cursor:pointer;
 }
 
 #reader{width:300px;margin:auto;}
@@ -72,7 +72,6 @@ button{
   box-shadow:0 10px 30px rgba(0,0,0,0.3);
   opacity:0;
   visibility:hidden;
-  z-index:99999;
 }
 
 .popup.show{
@@ -85,6 +84,8 @@ button{
   font-size:13px;
   margin-top:8px;
 }
+
+.manualBox{display:none;margin-top:8px;}
 
 </style>
 </head>
@@ -104,18 +105,19 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <!-- LOGIN -->
 <div id="loginBox" class="panel">
-  <input id="user" placeholder="Username">
-  <input id="pass" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
+
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+
+<button onclick="login()">Login</button>
+
+<div id="loginError" style="color:#ffb4b4;font-size:13px;"></div>
+
 </div>
 
-<!-- 🔵 NEW BUTTON QR STAFF -->
-<button onclick="openQRStaf()" style="
-width:95%;
-max-width:340px;
-background:linear-gradient(135deg,#3b82f6,#2563eb);
-">
-👤 Paparan QRCode Staf
+<!-- QR STAFF -->
+<button onclick="openQRStaf()" style="width:95%;max-width:340px;background:linear-gradient(135deg,#3b82f6,#2563eb);">
+👤 QRCode Staff
 </button>
 
 <div id="dashboard" style="display:none;">
@@ -123,15 +125,34 @@ background:linear-gradient(135deg,#3b82f6,#2563eb);
 <div class="panel">
 
 <label>Jenis Mesyuarat / Program</label>
-<select id="jenisMesyuarat">
+<select id="jenisMesyuarat" onchange="toggleOptions()">
+
 <option value="">-- Pilih --</option>
 <option value="Jawatankuasa Kewangan">Jawatankuasa Kewangan</option>
 <option value="Jawatankuasa Perlesenan">Jawatankuasa Perlesenan</option>
 <option value="Jawatankuasa Pengurusan">Jawatankuasa Pengurusan</option>
-<option value="Perhimpunan Bulanan Staf">Perhimpunan Bulanan Staf</option>
-<option value="Taklimat Khas">Taklimat Khas</option>
 <option value="Program Komuniti">Program Komuniti</option>
+<option value="Taklimat Khas">Taklimat Khas</option>
+
 </select>
+
+<!-- MANUAL -->
+<div id="programBox" class="manualBox">
+<input id="namaProgram" placeholder="Nama Program">
+</div>
+
+<div id="taklimatBox" class="manualBox">
+<input id="namaTaklimat" placeholder="Nama Taklimat">
+</div>
+
+<div id="layer2Box" class="manualBox">
+<select id="bilMesyuarat">
+<option>Bil.1/2026</option>
+<option>Bil.2/2026</option>
+<option>Bil.3/2026</option>
+<option>Bil.4/2026</option>
+</select>
+</div>
 
 <label>Tarikh</label>
 <input type="date" id="tarikh">
@@ -147,8 +168,6 @@ background:linear-gradient(135deg,#3b82f6,#2563eb);
 <option>Bilik Mesyuarat Utama</option>
 <option>Bilik Jawatankuasa</option>
 </select>
-
-<div id="errorMsg"></div>
 
 <button onclick="startQR()">📷 START SCAN</button>
 
@@ -171,10 +190,6 @@ background:linear-gradient(135deg,#3b82f6,#2563eb);
 <p id="pNama" style="font-weight:bold;"></p>
 <p id="pJawatan" style="color:#555;"></p>
 
-<div style="margin-top:10px;padding:8px;background:#dcfce7;border-radius:10px;color:#065f46;font-size:12px;font-weight:bold;">
-✔ Kehadiran direkodkan
-</div>
-
 </div>
 
 <script>
@@ -185,25 +200,60 @@ let scannedList=[];
 
 const beep=document.getElementById("beepSound");
 
-/* LOGIN */
+/* 🔐 LOGIN FROM SHEET */
 function login(){
+
+fetch("https://script.google.com/macros/s/AKfycbw1SU1rXicE1HD917ii3pwucNxsSvute4VAj4bm1cZqXp2fWa3VOilA0AqbatWflINMHA/exec",{
+method:"POST",
+headers:{"Content-Type":"text/plain"},
+body:JSON.stringify({
+action:"login",
+user:user.value,
+pass:pass.value
+})
+})
+.then(r=>r.json())
+.then(res=>{
+
+if(res.success){
 loginBox.style.display="none";
 dashboard.style.display="block";
+}else{
+loginError.innerText="Login gagal. Sila cuba lagi.";
 }
 
-/* OPEN QR STAFF PAGE */
+});
+
+}
+
+/* QR STAFF */
 function openQRStaf(){
+window.open("ahli.html","_blank");
+}
 
-let url = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=MDS-STAF-QR";
+/* TOGGLE */
+function toggleOptions(){
 
-window.open(url,"_blank");
+programBox.style.display="none";
+taklimatBox.style.display="none";
+layer2Box.style.display="none";
+
+if(jenisMesyuarat.value==="Program Komuniti"){
+programBox.style.display="block";
+}
+
+if(jenisMesyuarat.value==="Taklimat Khas"){
+taklimatBox.style.display="block";
+}
+
+if(jenisMesyuarat.value.includes("Jawatankuasa")){
+layer2Box.style.display="block";
+}
 
 }
 
-/* START SCAN */
+/* SCAN */
 function startQR(){
-
-document.getElementById("statusScan").innerText="📡 Scanning in progress...";
 
 scanner=new Html5Qrcode("reader");
 
@@ -212,10 +262,7 @@ scanner.start({facingMode:"environment"},{fps:10,qrbox:250},text=>{
 if(lock) return;
 lock=true;
 
-document.getElementById("statusScan").innerText="⚙️ Processing...";
-
 if(scannedList.includes(text)){
-document.getElementById("statusScan").innerText="🔴 Duplicate scan detected";
 lock=false;
 return;
 }
@@ -230,6 +277,9 @@ headers:{"Content-Type":"text/plain"},
 body:JSON.stringify({
 id:text,
 mesyuarat:jenisMesyuarat.value,
+program:namaProgram.value||"",
+taklimat:namaTaklimat.value||"",
+bil:bilMesyuarat.value||"",
 tempat:tempat.value,
 masa:masaMula.value+"-"+masaTamat.value
 })
@@ -239,21 +289,14 @@ masa:masaMula.value+"-"+masaTamat.value
 
 beep.play();
 
-let nama = res.nama || "Tidak Dikenal";
-let jawatan = res.jawatan || "Tidak Dikenal";
-
-document.getElementById("pNama").innerText="Nama: "+nama;
-document.getElementById("pJawatan").innerText="Jawatan: "+jawatan;
-
-document.getElementById("statusScan").innerText="🟢 Attendance recorded successfully";
+pNama.innerText="Nama: "+(res.nama||"Tiada Data");
+pJawatan.innerText="Jawatan: "+(res.jawatan||"Tiada Data");
 
 popup.classList.add("show");
 
 setTimeout(()=>{
 
 popup.classList.remove("show");
-document.getElementById("statusScan").innerText="🟢 Sedia untuk scan";
-
 lock=false;
 startQR();
 
