@@ -18,16 +18,16 @@ body{
   color:white;
 }
 
-/* LETTERHEAD */
+/* HEADER */
 .letterhead{padding:12px 0;}
 .logo{width:85px;}
 .org-name{font-weight:bold;font-size:16px;}
 .org-address{font-size:12px;color:#d1d5db;}
 
-/* 🔐 LOGIN + PANEL (GLASS STYLE MDS) */
+/* PANEL */
 .panel{
   background:rgba(255,255,255,0.12);
-  backdrop-filter: blur(10px);
+  backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,0.2);
   color:white;
   margin:12px auto;
@@ -48,11 +48,11 @@ input,select{
   outline:none;
 }
 
-/* 🔵 BUTTON STYLE MDS */
+/* BUTTON */
 button{
   width:95%;
   padding:12px;
-  margin:10px 0;
+  margin:8px 0;
   border:none;
   border-radius:10px;
   background:linear-gradient(135deg,#10b981,#059669);
@@ -67,18 +67,26 @@ button:hover{
   background:linear-gradient(135deg,#059669,#047857);
 }
 
-/* QR SCANNER */
+/* QR */
 #reader{width:300px;margin:auto;}
+
+/* STATUS */
+#statusScan{
+  margin-top:10px;
+  font-weight:bold;
+  color:#a7f3d0;
+}
 
 /* POPUP */
 .popup{
   position:fixed;
   top:50%;left:50%;
   transform:translate(-50%,-50%);
-  background:white;
-  color:black;
+  background:rgba(255,255,255,0.95);
+  border-radius:18px;
   padding:25px;
-  border-radius:15px;
+  width:280px;
+  text-align:center;
   box-shadow:0 10px 30px rgba(0,0,0,0.3);
   opacity:0;
   visibility:hidden;
@@ -97,49 +105,40 @@ button:hover{
   margin-top:8px;
 }
 
-/* HIDE OPTIONAL */
-#bilBox,#programBox,#taklimatBox,#tempatLainBox{display:none;}
+/* HIDE */
+#programBox,#taklimatBox{display:none;}
 
 </style>
 </head>
 
 <body>
 
-<!-- SOUND -->
 <audio id="beepSound"
 src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
-<!-- HEADER -->
 <div class="letterhead">
   <img class="logo" src="mds.png">
   <div class="org-name">MAJLIS DAERAH SIMUNJAN</div>
-  <div class="org-address">Lot 805, Gunong Ngeli New Service Centre,</div>
-  <div class="org-address">94800 Simunjan, Sarawak, Malaysia.</div>
+  <div class="org-address">Sistem Kehadiran Digital MDS</div>
 </div>
 
-<h3>🏢 SISTEM KEHADIRAN DIGITAL MDS</h3>
+<h3>🏢 SISTEM KEHADIRAN MDS</h3>
 
 <!-- LOGIN -->
 <div id="loginBox" class="panel">
-  <h3>🔐 Login Sistem</h3>
+  <h3>🔐 Login</h3>
   <input id="user" placeholder="Username">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Login</button>
 </div>
 
-<!-- QR PAGE -->
-<button onclick="openAhliPage()" style="background:#2ecc71;width:95%;max-width:340px;">
-👤 QRCode Kehadiran Staf
-</button>
-
 <!-- DASHBOARD -->
 <div id="dashboard" style="display:none;">
 
-<div class="panel" id="formPanel">
+<div class="panel">
 
 <label>Jenis Mesyuarat / Program</label>
 <select id="jenisMesyuarat" onchange="toggleOptions()">
-
 <option value="">-- Pilih --</option>
 <option value="Jawatankuasa Kewangan" data-bil="1">Jawatankuasa Kewangan</option>
 <option value="Jawatankuasa Perlesenan" data-bil="1">Jawatankuasa Perlesenan</option>
@@ -147,7 +146,6 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 <option value="Perhimpunan Bulanan Staf" data-bil="0">Perhimpunan Bulanan Staf</option>
 <option value="Taklimat Khas" data-bil="0">Taklimat Khas</option>
 <option value="Program Komuniti" data-bil="0">Program Komuniti</option>
-
 </select>
 
 <div id="programBox">
@@ -158,16 +156,6 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 <div id="taklimatBox">
 <label>Nama Taklimat</label>
 <input id="namaTaklimat">
-</div>
-
-<div id="bilBox">
-<label>Bil Mesyuarat</label>
-<select id="bilMesyuarat">
-<option>Bil.1/2026</option>
-<option>Bil.2/2026</option>
-<option>Bil.3/2026</option>
-<option>Bil.4/2026</option>
-</select>
 </div>
 
 <label>Tarikh</label>
@@ -181,16 +169,21 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <label>Tempat</label>
 <select id="tempat">
+<option value="">-- Pilih --</option>
 <option>Bilik Mesyuarat Utama</option>
 <option>Bilik Jawatankuasa</option>
-<option value="lain">Lain-lain</option>
 </select>
-
-<input id="tempatLainBox" placeholder="Lokasi lain">
 
 <div id="errorMsg"></div>
 
 <button onclick="startQR()">📷 START SCAN</button>
+
+<!-- 🔄 NEW BUTTON -->
+<button onclick="refreshScanner()" style="background:linear-gradient(135deg,#3b82f6,#2563eb);">
+🔄 REFRESH SCANNER
+</button>
+
+<div id="statusScan">🟢 Sedia untuk scan</div>
 
 </div>
 
@@ -201,9 +194,18 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 
 <!-- POPUP -->
 <div id="popup" class="popup">
-  <h3>✔ SCAN BERJAYA</h3>
-  <p id="pNama"></p>
-  <p id="pJawatan"></p>
+
+<div style="font-size:40px;">🎉</div>
+
+<h3 style="color:#047857;">KEHADIRAN BERJAYA</h3>
+
+<p id="pNama" style="font-weight:bold;"></p>
+<p id="pJawatan" style="color:#555;"></p>
+
+<div style="margin-top:10px;padding:8px;background:#dcfce7;border-radius:10px;color:#065f46;font-size:12px;font-weight:bold;">
+✔ Kehadiran direkodkan
+</div>
+
 </div>
 
 <script>
@@ -212,66 +214,44 @@ const API="https://script.google.com/macros/s/AKfycbw1SU1rXicE1HD917ii3pwucNxsSv
 
 let scanner;
 let lock=false;
+let scannedList=[];
+
 const beep=document.getElementById("beepSound");
-
-/* LOGIN */
-function login(){
-
-fetch(API,{
-method:"POST",
-headers:{"Content-Type":"text/plain"},
-body:JSON.stringify({action:"login",user:user.value,pass:pass.value})
-})
-.then(r=>r.json())
-.then(res=>{
-if(!res.success){
-alert("Login gagal");
-return;
-}
-
-localStorage.setItem("mds_login","1");
-
-loginBox.style.display="none";
-dashboard.style.display="block";
-
-});
-}
-
-/* OPEN PAGE */
-function openAhliPage(){
-window.open("ahli.html","_blank");
-}
-
-/* TOGGLE */
-function toggleOptions(){
-
-let s = jenisMesyuarat.options[jenisMesyuarat.selectedIndex];
-
-bilBox.style.display = s.getAttribute("data-bil")==="1"?"block":"none";
-programBox.style.display = (jenisMesyuarat.value==="Program Komuniti")?"block":"none";
-taklimatBox.style.display = (jenisMesyuarat.value==="Taklimat Khas")?"block":"none";
-
-}
 
 /* VALIDATE */
 function validateForm(){
-
-if(!jenisMesyuarat.value||!tarikh.value||!masaMula.value||!masaTamat.value||!tempat.value){
+if(!jenisMesyuarat.value ||
+!tarikh.value ||
+!masaMula.value ||
+!masaTamat.value ||
+!tempat.value){
 return "Sila lengkapkan semua maklumat";
 }
 
-if(jenisMesyuarat.value==="Program Komuniti"&&!namaProgram.value){
+if(jenisMesyuarat.value==="Program Komuniti" && !namaProgram.value){
 return "Isi nama program";
 }
 
-if(jenisMesyuarat.value==="Taklimat Khas"&&!namaTaklimat.value){
+if(jenisMesyuarat.value==="Taklimat Khas" && !namaTaklimat.value){
 return "Isi nama taklimat";
 }
 
 return null;
 }
 
-/* START QR */
+/* TOGGLE */
+function toggleOptions(){
+programBox.style.display=(jenisMesyuarat.value==="Program Komuniti")?"block":"none";
+taklimatBox.style.display=(jenisMesyuarat.value==="Taklimat Khas")?"block":"none";
+}
+
+/* LOGIN */
+function login(){
+loginBox.style.display="none";
+dashboard.style.display="block";
+}
+
+/* START SCANNER */
 function startQR(){
 
 let err=validateForm();
@@ -281,8 +261,7 @@ return;
 }
 
 document.getElementById("errorMsg").innerText="";
-
-if(scanner) scanner.clear();
+document.getElementById("statusScan").innerText="📡 Scanning in progress...";
 
 scanner=new Html5Qrcode("reader");
 
@@ -290,6 +269,16 @@ scanner.start({facingMode:"environment"},{fps:10,qrbox:250},text=>{
 
 if(lock) return;
 lock=true;
+
+document.getElementById("statusScan").innerText="⚙️ Processing...";
+
+if(scannedList.includes(text)){
+document.getElementById("statusScan").innerText="🔴 Duplicate scan detected";
+lock=false;
+return;
+}
+
+scannedList.push(text);
 
 scanner.stop().catch(()=>{});
 
@@ -308,20 +297,40 @@ masa:masaMula.value+"-"+masaTamat.value
 
 beep.play();
 
+document.getElementById("statusScan").innerText="🟢 Attendance recorded successfully";
+
 document.getElementById("pNama").innerText=res.nama;
 document.getElementById("pJawatan").innerText=res.jawatan;
 
 popup.classList.add("show");
 
 setTimeout(()=>{
+
 popup.classList.remove("show");
+document.getElementById("statusScan").innerText="🟢 Sedia untuk scan";
+
 lock=false;
 startQR();
+
 },1800);
 
 });
 
 });
+
+}
+
+/* 🔄 REFRESH SCANNER */
+function refreshScanner(){
+
+if(scanner){
+scanner.stop().then(()=>{
+document.getElementById("statusScan").innerText="🔄 Scanner refreshed";
+startQR();
+}).catch(()=>{});
+}else{
+startQR();
+}
 
 }
 
