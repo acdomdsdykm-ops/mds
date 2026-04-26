@@ -66,6 +66,10 @@ button{
   cursor:pointer;
 }
 
+button:hover{
+  background:#2980b9;
+}
+
 /* QR */
 #reader{
   width:300px;
@@ -181,7 +185,7 @@ button{
   <button onclick="login()">Login</button>
 </div>
 
-<!-- 👤 BUTTON BARU (QR AHLI) -->
+<!-- BUTTON QR AHLI -->
 <button onclick="openAhliPage()" style="background:#2ecc71;">
 👤 Paparan QR Code Ahli Mesyuarat
 </button>
@@ -191,10 +195,19 @@ button{
 
 <div class="panel">
 
-<label>Mesyuarat</label>
-<select id="mesyuarat">
-  <option>Perlesenan</option>
-  <option>Pengurusan</option>
+<label>Jenis Mesyuarat</label>
+<select id="jenisMesyuarat">
+  <option>Jawatankuasa Kewangan</option>
+  <option>Jawatankuasa Perlesenan</option>
+  <option>Jawatankuasa Pengurusan</option>
+</select>
+
+<label>Bil Mesyuarat</label>
+<select id="bilMesyuarat">
+  <option>Bil.1/2026</option>
+  <option>Bil.2/2026</option>
+  <option>Bil.3/2026</option>
+  <option>Bil.4/2026</option>
 </select>
 
 <label>Tarikh</label>
@@ -243,6 +256,11 @@ const API="https://script.google.com/macros/s/AKfycbzXxubDQOG7_51liomvqlP60s2fmc
 let scanner;
 let lock=false;
 
+/* COMBINE MESYUARAT */
+function getMesyuarat(){
+  return jenisMesyuarat.value + " " + bilMesyuarat.value;
+}
+
 /* SOUND */
 function beep(){
   new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
@@ -257,9 +275,9 @@ function hideLoading(){
   loading.style.display="none";
 }
 
-/* 👤 OPEN AHLI PAGE */
+/* OPEN AHLI */
 function openAhliPage(){
-  showLoading("Membuka paparan ahli...");
+  showLoading("Membuka...");
   setTimeout(()=>{
     hideLoading();
     window.open("ahli.html","_blank");
@@ -311,15 +329,14 @@ function startQR(){
       if(lock) return;
       lock=true;
 
-      scanner.stop(); // STOP AUTO
-
-      beep(); // SOUND
+      scanner.stop();
+      beep();
 
       fetch(API,{
         method:"POST",
         body:JSON.stringify({
           id:text,
-          mesyuarat:mesyuarat.value,
+          mesyuarat:getMesyuarat(),
           tempat:tempat.value,
           masa:masa.value
         })
@@ -327,8 +344,8 @@ function startQR(){
       .then(r=>r.json())
       .then(res=>{
 
-        nama.innerText=res.nama;
-        jawatan.innerText=res.jawatan;
+        nama.innerText=res.nama || "-";
+        jawatan.innerText=res.jawatan || "-";
 
         card.classList.add("show");
         setTimeout(()=>card.classList.remove("show"),2000);
@@ -346,8 +363,8 @@ function startQR(){
 
 /* POPUP */
 function showPopup(nama,jawatan){
-  pNama.innerText="Nama: "+nama;
-  pJawatan.innerText="Jawatan: "+jawatan;
+  pNama.innerText="Nama: "+(nama||"-");
+  pJawatan.innerText="Jawatan: "+(jawatan||"-");
   popup.classList.add("show");
 }
 
@@ -378,7 +395,7 @@ function printPDF(){
     body:JSON.stringify({
       action:"pdf",
       tarikh:tarikh.value,
-      mesyuarat:mesyuarat.value,
+      mesyuarat:getMesyuarat(),
       tempat:tempat.value,
       masa:masa.value
     })
