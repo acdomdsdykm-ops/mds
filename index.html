@@ -193,6 +193,8 @@ src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 <h3>📷 Scan QR</h3>
 <div id="reader"></div>
 
+<button onclick="switchCamera()">🔄 Tukar Kamera</button>
+
 </div>
 
 <!-- POPUP -->
@@ -274,7 +276,7 @@ function startQR(){
 
 scanner=new Html5Qrcode("reader");
 
-scanner.start({facingMode:"environment"},{fps:10,qrbox:250},text=>{
+scanner.start({facingMode:"user"},{fps:10,qrbox:250},text=>{
 
 if(lock) return;
 lock=true;
@@ -320,6 +322,20 @@ startQR();
 
 });
 
+}
+
+let currentCam = "environment";
+
+function switchCamera(){
+  scanner.stop().then(()=>{
+    currentCam = currentCam === "environment" ? "user" : "environment";
+
+    scanner.start(
+      { facingMode: currentCam },
+      { fps: 10, qrbox: 250 },
+      onScanSuccess
+    );
+  });
 }
 
 /* CLOSE POPUP */
